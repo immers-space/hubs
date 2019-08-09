@@ -2,6 +2,13 @@ function getInspectable(child) {
   let el = child;
   while (el) {
     if (el.components && el.components.tags && el.components.tags.data.inspectable) return el;
+    if (
+      el.attributes &&
+      el.attributes.tags &&
+      el.attributes.tags.value &&
+      el.attributes.tags.value.indexOf("inspectable") !== -1
+    )
+      return el;
     el = el.parentNode;
   }
   return null;
