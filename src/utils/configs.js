@@ -5,7 +5,9 @@ import sceneEditorLogo from "../assets/images/editor-logo.png";
 import pdfjs from "pdfjs-dist";
 
 // Read configs from global variable if available, otherwise use the process.env injected from build.
-const configs = {};
+const configs = {
+  IMMERS_SERVER: "https://localhost:8081"
+};
 let isAdmin = false;
 
 [

@@ -20,8 +20,13 @@ export const SCHEMA = {
       type: "object",
       additionalProperties: false,
       properties: {
+        handle: { type: "string" },
         displayName: { type: "string", pattern: "^[A-Za-z0-9 -]{3,32}$" },
         avatarId: { type: "string" },
+        id: { type: "string" },
+        outbox: { type: "string" },
+        inbox: { type: "string" },
+        followers: { type: "string" },
         // personalAvatarId is obsolete, but we need it here for backwards compatibility.
         personalAvatarId: { type: "string" }
       }

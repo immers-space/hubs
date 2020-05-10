@@ -169,12 +169,13 @@ export default class SceneEntryManager {
 
   _setPlayerInfoFromProfile = async (force = false) => {
     const avatarId = this.store.state.profile.avatarId;
+    const immersId = this.store.state.profile.id;
     if (!force && this._lastFetchedAvatarId === avatarId) return; // Avoid continually refetching based upon state changing
 
     this._lastFetchedAvatarId = avatarId;
     const avatarSrc = await getAvatarSrc(avatarId);
 
-    this.avatarRig.setAttribute("player-info", { avatarSrc, avatarType: getAvatarType(avatarId) });
+    this.avatarRig.setAttribute("player-info", { avatarSrc, avatarType: getAvatarType(avatarId), immersId });
   };
 
   _setupKicking = () => {

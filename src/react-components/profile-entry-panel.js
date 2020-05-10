@@ -56,13 +56,9 @@ class ProfileEntryPanel extends Component {
   saveStateAndFinish = e => {
     e && e.preventDefault();
 
-    const { displayName } = this.props.store.state.profile;
-    const { hasChangedName } = this.props.store.state.activity;
-
-    const hasChangedNowOrPreviously = hasChangedName || this.state.displayName !== displayName;
     this.props.store.update({
       activity: {
-        hasChangedName: hasChangedNowOrPreviously,
+        hasChangedName: true,
         hasAcceptedProfile: true
       },
       profile: {

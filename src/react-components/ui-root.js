@@ -81,7 +81,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import qsTruthy from "../utils/qs_truthy";
 import { CAMERA_MODE_INSPECT } from "../systems/camera-system";
+
 const avatarEditorDebug = qsTruthy("avatarEditorDebug");
+
+import * as immers from "../utils/immers";
 
 addLocaleData([...en]);
 
@@ -140,6 +143,7 @@ class UIRoot extends Component {
     isSupportAvailable: PropTypes.bool,
     presenceLogEntries: PropTypes.array,
     presences: PropTypes.object,
+    friends: PropTypes.array,
     sessionId: PropTypes.string,
     subscriptions: PropTypes.object,
     initialIsSubscribed: PropTypes.bool,
@@ -214,7 +218,8 @@ class UIRoot extends Component {
     objectInfo: null,
     objectSrc: "",
     isObjectListExpanded: false,
-    isPresenceListExpanded: false
+    isPresenceListExpanded: false,
+    hasUnreadFriendUpdate: false,
   };
 
   constructor(props) {
@@ -267,6 +272,12 @@ class UIRoot extends Component {
           }
         }, 0);
       });
+    }
+    if (prevProps.friends !== this.props.friends && !this.state.isPresenceListExpanded) {
+      this.setState({ hasUnreadFriendUpdate: true });
+      this.props.scene.addState("notification");
+    } else if (!this.state.hasUnreadFriendUpdate) {
+      this.props.scene.removeState("notification");
     }
   }
 
@@ -371,6 +382,9 @@ class UIRoot extends Component {
     }
 
     this.playerRig = scene.querySelector("#avatar-rig");
+    if (this.props.showSignInDialog) {
+      this.showSignInDialog();
+    }
   }
 
   UNSAFE_componentWillMount() {
@@ -863,12 +877,14 @@ class UIRoot extends Component {
     this.showNonHistoriedDialog(SignInDialog, {
       message: messages["sign-in.prompt"],
       onSignIn: async email => {
-        const { authComplete } = await this.props.authChannel.startAuthentication(email, this.props.hubChannel);
-
         this.showNonHistoriedDialog(SignInDialog, { authStarted: true });
-
-        await authComplete;
-
+        try {
+          await immers.signIn(email, this.props.store);
+        } catch (err) {
+          console.error("Error signing in to immers profile:", err.message);
+          this.showNonHistoriedDialog(SignInDialog, { authStarted: false });
+          return;
+        }
         this.setState({ signedIn: true });
         this.closeDialog();
       }
@@ -2065,6 +2081,8 @@ class UIRoot extends Component {
             <PresenceList
               history={this.props.history}
               presences={this.props.presences}
+              friends={this.props.friends}
+              friendsUpdated={this.state.hasUnreadFriendUpdate}
               sessionId={this.props.sessionId}
               signedIn={this.state.signedIn}
               email={this.props.store.state.credentials.email}
@@ -2073,7 +2091,7 @@ class UIRoot extends Component {
               expanded={!this.state.isObjectListExpanded && this.state.isPresenceListExpanded}
               onExpand={expand => {
                 if (expand) {
-                  this.setState({ isPresenceListExpanded: expand, isObjectListExpanded: false });
+                  this.setState({ isPresenceListExpanded: expand, isObjectListExpanded: false, hasUnreadFriendUpdate: false });
                 } else {
                   this.setState({ isPresenceListExpanded: expand });
                 }
