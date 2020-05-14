@@ -382,9 +382,6 @@ class UIRoot extends Component {
     }
 
     this.playerRig = scene.querySelector("#avatar-rig");
-    if (this.props.showSignInDialog) {
-      this.showSignInDialog();
-    }
   }
 
   UNSAFE_componentWillMount() {

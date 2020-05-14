@@ -2,6 +2,7 @@ import io from "socket.io-client";
 import configs from "./configs";
 const host = configs.IMMERS_SERVER;
 let place;
+let token;
 
 export function getAvatarFromActor(actorObj) {
   if (!actorObj.attachment) {
@@ -31,6 +32,18 @@ export async function getLocalActor(name) {
   const response = await window.fetch(`${host}/u/${name}`, {
     headers: {
       Accept: "application/activity+json"
+    }
+  });
+  if (!response.ok) {
+    return null;
+  }
+  return response.json();
+}
+export async function getActor() {
+  const response = await window.fetch(`${host}/me`, {
+    headers: {
+      Accept: "application/activity+json",
+      Authorization: `Bearer ${token}`
     }
   });
   if (!response.ok) {
@@ -112,12 +125,68 @@ export async function getFriends(actorObj) {
   return response.json();
 }
 
-getObject(`${host}/o/immer`).then(immer => {
-  place = immer;
-  place.url = window.location.href; // adds room id
-});
+// perform oauth flow to get access token for local or remote user
+export async function auth(store) {
+  const loc = new URL(window.location);
+  const params = loc.searchParams;
+  const hashParams = new URLSearchParams(loc.hash.substring(1));
+  const hubUri = new URL(window.location);
+  hubUri.seach = new URLSearchParams({ hub_id: params.get("hub_id") }).toString();
+  hubUri.hash = "";
+  place = await getObject(`${host}/o/immer`);
+  place.url = hubUri; // include room id
 
-export function initialize(store, scene, remountUI) {
+  if (hashParams.has("access_token")) {
+    // record user's home server in case redirected during auth
+    let home;
+    try {
+      home = new URL(document.referrer);
+      home = `${home.protocol}//${home.host}`;
+    } catch (ignore) {
+      home = null;
+    }
+    store.update({
+      immerCredentials: {
+        token: hashParams.get("access_token"),
+        home
+      }
+    });
+    window.location.hash = "";
+  }
+
+  if (!store.state.immerCredentials.token) {
+    const redirect = new URL(`${host}/dialog/authorize`);
+    redirect.search = new URLSearchParams({
+      client_id: place.id,
+      redirect_uri: hubUri,
+      response_type: "token"
+    }).toString();
+    window.location = redirect;
+    return;
+  } else {
+    token = store.state.immerCredentials.token;
+  }
+}
+
+export async function initialize(store, scene, remountUI) {
+  // immers profile
+  const actorObj = await getActor();
+  if (actorObj) {
+    const initialAvi = store.state.profile.avatarId;
+    store.update({
+      profile: {
+        id: actorObj.id,
+        avatarId: getAvatarFromActor(actorObj) || initialAvi,
+        displayName: actorObj.name,
+        inbox: actorObj.inbox,
+        outbox: actorObj.outbox,
+        followers: actorObj.followers
+      },
+      activity: {
+        hasChangedName: true
+      }
+    });
+  }
   const immerSocket = io(host);
   // arrive/leave activities
   scene.addEventListener(
