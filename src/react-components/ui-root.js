@@ -81,10 +81,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import qsTruthy from "../utils/qs_truthy";
 import { CAMERA_MODE_INSPECT } from "../systems/camera-system";
-
 const avatarEditorDebug = qsTruthy("avatarEditorDebug");
-
-import * as immers from "../utils/immers";
 
 addLocaleData([...en]);
 
@@ -874,14 +871,12 @@ class UIRoot extends Component {
     this.showNonHistoriedDialog(SignInDialog, {
       message: messages["sign-in.prompt"],
       onSignIn: async email => {
+        const { authComplete } = await this.props.authChannel.startAuthentication(email, this.props.hubChannel);
+
         this.showNonHistoriedDialog(SignInDialog, { authStarted: true });
-        try {
-          await immers.signIn(email, this.props.store);
-        } catch (err) {
-          console.error("Error signing in to immers profile:", err.message);
-          this.showNonHistoriedDialog(SignInDialog, { authStarted: false });
-          return;
-        }
+
+        await authComplete;
+
         this.setState({ signedIn: true });
         this.closeDialog();
       }

@@ -66,8 +66,9 @@ export default class SignInDialog extends Component {
           <span>{this.props.message}</span>
           <input
             name="email"
+            type="email"
             required
-            placeholder="Your immers handle"
+            placeholder="Your email address"
             value={this.state.email}
             onFocus={e => handleTextFieldFocus(e.target)}
             onBlur={() => handleTextFieldBlur()}
