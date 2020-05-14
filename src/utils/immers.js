@@ -1,6 +1,7 @@
 import io from "socket.io-client";
 import configs from "./configs";
-const host = configs.IMMERS_SERVER;
+const localImmer = configs.IMMERS_SERVER;
+let homeImmer;
 let place;
 let token;
 
@@ -17,7 +18,7 @@ export function getAvatarFromActor(actorObj) {
 }
 
 export async function getObject(IRI) {
-  if (IRI.startsWith(host)) {
+  if (IRI.startsWith(localImmer) || IRI.startsWith(homeImmer)) {
     const result = await window.fetch(IRI, {
       headers: { Accept: "application/activity+json" }
     });
@@ -25,22 +26,13 @@ export async function getObject(IRI) {
       throw new Error(`Object fetch error ${result.message}`);
     }
     return result.json();
+  } else {
+    throw new Error("Object fetch proxy not implemented");
   }
 }
 
-export async function getLocalActor(name) {
-  const response = await window.fetch(`${host}/u/${name}`, {
-    headers: {
-      Accept: "application/activity+json"
-    }
-  });
-  if (!response.ok) {
-    return null;
-  }
-  return response.json();
-}
 export async function getActor() {
-  const response = await window.fetch(`${host}/me`, {
+  const response = await window.fetch(`${homeImmer}/me`, {
     headers: {
       Accept: "application/activity+json",
       Authorization: `Bearer ${token}`
@@ -53,7 +45,7 @@ export async function getActor() {
 }
 
 export async function createLocalActor(name) {
-  const response = await window.fetch(`${host}/u/${name}`, {
+  const response = await window.fetch(`${localImmer}/u/${name}`, {
     method: "POST",
     headers: {
       Accept: ["application/activity+json"]
@@ -133,7 +125,7 @@ export async function auth(store) {
   const hubUri = new URL(window.location);
   hubUri.seach = new URLSearchParams({ hub_id: params.get("hub_id") }).toString();
   hubUri.hash = "";
-  place = await getObject(`${host}/o/immer`);
+  place = await getObject(`${localImmer}/o/immer`);
   place.url = hubUri; // include room id
 
   if (hashParams.has("access_token")) {
@@ -155,7 +147,7 @@ export async function auth(store) {
   }
 
   if (!store.state.immerCredentials.token) {
-    const redirect = new URL(`${host}/dialog/authorize`);
+    const redirect = new URL(`${localImmer}/dialog/authorize`);
     redirect.search = new URLSearchParams({
       client_id: place.id,
       redirect_uri: hubUri,
@@ -165,6 +157,7 @@ export async function auth(store) {
     return;
   } else {
     token = store.state.immerCredentials.token;
+    homeImmer = store.state.immerCredentials.home;
   }
 }
 
@@ -187,7 +180,7 @@ export async function initialize(store, scene, remountUI) {
       }
     });
   }
-  const immerSocket = io(host);
+  const immerSocket = io(homeImmer);
   // arrive/leave activities
   scene.addEventListener(
     "entered",
@@ -265,29 +258,4 @@ export async function initialize(store, scene, remountUI) {
     }
     follow(store.state.profile, event.detail).catch(err => console.err("Error sending follow request:", err.message));
   });
-}
-
-export async function signIn(handle, store) {
-  const handleParts = handle.split("@");
-  // todo: login to remote user's hosts
-  // if (handleParts[1] !== window.location.host) {}
-  let actorObj = await getLocalActor(handleParts[0]);
-  if (!actorObj && !handleParts[1]) {
-    actorObj = await createLocalActor(handleParts[0]);
-    handle = `${handleParts[0]}@${window.location.host}`;
-  }
-  if (actorObj) {
-    const initialAvi = store.state.profile.avatarId;
-    store.update({
-      profile: {
-        handle,
-        id: actorObj.id,
-        avatarId: getAvatarFromActor(actorObj) || initialAvi,
-        displayName: actorObj.name,
-        inbox: actorObj.inbox,
-        outbox: actorObj.outbox,
-        followers: actorObj.followers
-      }
-    });
-  }
 }
