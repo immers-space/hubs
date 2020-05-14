@@ -166,12 +166,13 @@ export function initialize(store, scene, remountUI) {
   };
   store.addEventListener("profilechanged", onImmersProfileChange);
   scene.addEventListener("avatar_updated", () => {
-    updateProfile(store.state.profile, {
-      name: store.state.displayName,
+    const profile = store.state.profile;
+    updateProfile(profile, {
+      name: profile.displayName,
       attachment: [
         {
           type: "Avatar",
-          content: store.state.avatarId
+          content: profile.avatarId
         }
       ]
     }).catch(err => console.error("Error updating profile:", err.message));
@@ -193,8 +194,7 @@ export function initialize(store, scene, remountUI) {
     if (!event.detail) {
       return;
     }
-    follow(store.state.profile, event.detail)
-      .catch(err => console.err("Error sending follow request:", err.message));
+    follow(store.state.profile, event.detail).catch(err => console.err("Error sending follow request:", err.message));
   });
 }
 
