@@ -108,7 +108,8 @@ export function leave(actorObj) {
 export async function getFriends(actorObj) {
   const response = await window.fetch(`${actorObj.id}/friends`, {
     headers: {
-      Accept: "application/activity+json"
+      Accept: "application/activity+json",
+      Authorization: `Bearer ${token}`
     }
   });
   if (!response.ok) {
