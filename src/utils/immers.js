@@ -19,9 +19,11 @@ export function getAvatarFromActor(actorObj) {
 
 export async function getObject(IRI) {
   if (IRI.startsWith(localImmer) || IRI.startsWith(homeImmer)) {
-    const result = await window.fetch(IRI, {
-      headers: { Accept: "application/activity+json" }
-    });
+    const headers = { Accept: "application/activity+json" };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    const result = await window.fetch(IRI, { headers });
     if (!result.ok) {
       throw new Error(`Object fetch error ${result.message}`);
     }
@@ -32,7 +34,7 @@ export async function getObject(IRI) {
 }
 
 export async function getActor() {
-  const response = await window.fetch(`${homeImmer}/me`, {
+  const response = await window.fetch(`${homeImmer}/auth/me`, {
     headers: {
       Accept: "application/activity+json",
       Authorization: `Bearer ${token}`
@@ -44,24 +46,12 @@ export async function getActor() {
   return response.json();
 }
 
-export async function createLocalActor(name) {
-  const response = await window.fetch(`${localImmer}/u/${name}`, {
-    method: "POST",
-    headers: {
-      Accept: ["application/activity+json"]
-    }
-  });
-  if (!response.ok) {
-    throw new Error("Error creating actor");
-  }
-  return response.json();
-}
-
 export function postActivity(outbox, activity) {
   return window.fetch(outbox, {
     method: "POST",
     headers: {
-      "Content-Type": "application/activity+json"
+      "Content-Type": "application/activity+json",
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(activity)
   });
@@ -148,7 +138,7 @@ export async function auth(store) {
   }
 
   if (!store.state.immerCredentials.token) {
-    const redirect = new URL(`${localImmer}/dialog/authorize`);
+    const redirect = new URL(`${localImmer}/auth/authorize`);
     redirect.search = new URLSearchParams({
       client_id: place.id,
       redirect_uri: hubUri,
