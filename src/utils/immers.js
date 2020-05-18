@@ -151,8 +151,6 @@ export async function auth(store) {
     homeImmer = store.state.immerCredentials.home;
   }
 }
-// TODO: ensure socket.profile happens even if profile cached
-// TODO: arrive activity should happen earlier; on authorized connection
 export async function initialize(store, scene, remountUI) {
   // immers profile
   const actorObj = await getActor();
@@ -181,26 +179,25 @@ export async function initialize(store, scene, remountUI) {
       }
     }
   });
-  // arrive/leave activities
-  scene.addEventListener(
-    "entered",
-    () => {
-      const profile = store.state.profile;
-      if (!profile.id) return;
-      arrive(profile);
-      immerSocket.emit("entered", {
-        outbox: profile.outbox,
-        // prepare a leave activity to be fired on disconnect
-        leave: {
-          type: "Leave",
-          actor: profile.id,
-          target: window.location.href,
-          to: profile.followers
-        }
-      });
-    },
-    { once: true }
-  );
+  let hasArrived;
+  immerSocket.on("connect", () => {
+    if (hasArrived) {
+      return;
+    }
+    hasArrived = true;
+    arrive(actorObj);
+    immerSocket.emit("entered", {
+      // prepare a leave activity to be fired on disconnect
+      outbox: actorObj.outbox,
+      authorization: `Bearer ${token}`,
+      leave: {
+        type: "Leave",
+        actor: actorObj.id,
+        target: window.location.href,
+        to: actorObj.followers
+      }
+    });
+  });
 
   // friends list
   let friendsCol;
@@ -220,13 +217,9 @@ export async function initialize(store, scene, remountUI) {
       }
     }
   };
+  updateFriends();
   immerSocket.on("friends-update", updateFriends);
-  // profile
-  const onImmersProfileChange = () => {
-    immerSocket.emit("profile", store.state.profile.id);
-    updateFriends();
-  };
-  store.addEventListener("profilechanged", onImmersProfileChange);
+
   scene.addEventListener("avatar_updated", () => {
     const profile = store.state.profile;
     updateProfile(profile, {
@@ -239,8 +232,6 @@ export async function initialize(store, scene, remountUI) {
       ]
     }).catch(err => console.error("Error updating profile:", err.message));
   });
-  // send profile id if it was cached, pull initial friends list
-  onImmersProfileChange();
 
   // entity interactions
   scene.addEventListener("immers-id-changed", event => {
