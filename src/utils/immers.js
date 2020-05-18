@@ -151,7 +151,8 @@ export async function auth(store) {
     homeImmer = store.state.immerCredentials.home;
   }
 }
-
+// TODO: ensure socket.profile happens even if profile cached
+// TODO: arrive activity should happen earlier; on authorized connection
 export async function initialize(store, scene, remountUI) {
   // immers profile
   const actorObj = await getActor();
@@ -171,7 +172,15 @@ export async function initialize(store, scene, remountUI) {
       }
     });
   }
-  const immerSocket = io(homeImmer);
+  const immerSocket = io(homeImmer, {
+    transportOptions: {
+      polling: {
+        extraHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    }
+  });
   // arrive/leave activities
   scene.addEventListener(
     "entered",
