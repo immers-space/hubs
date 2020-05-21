@@ -678,6 +678,8 @@ function handleHubChannelJoined(entryManager, hubChannel, messageDispatch, data)
   } else {
     connectToScene();
   }
+
+  immers.initialize(store, scene, remountUI);
 }
 
 async function runBotMode(scene, entryManager) {
@@ -1579,6 +1581,4 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   authChannel.setSocket(socket);
   linkChannel.setSocket(socket);
-
-  immers.initialize(store, scene, remountUI);
 });
