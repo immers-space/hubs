@@ -1,5 +1,6 @@
 import io from "socket.io-client";
 import configs from "./configs";
+import { fetchAvatar } from "./avatar-utils";
 const localImmer = configs.IMMERS_SERVER;
 let homeImmer;
 let place;
@@ -12,7 +13,7 @@ export function getAvatarFromActor(actorObj) {
   const attachments = Array.isArray(actorObj.attachment) ? actorObj.attachment : [actorObj.attachment];
   const avi = attachments.find(obj => obj.type === "Avatar");
   if (avi) {
-    return avi.url || avi.content;
+    return avi.url;
   }
   return null;
 }
@@ -220,14 +221,16 @@ export async function initialize(store, scene, remountUI) {
   updateFriends();
   immerSocket.on("friends-update", updateFriends);
 
-  scene.addEventListener("avatar_updated", () => {
+  scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
+    const avatar = await fetchAvatar(profile.avatarId);
     updateProfile(profile, {
       name: profile.displayName,
       attachment: [
         {
           type: "Avatar",
-          content: profile.avatarId
+          content: profile.avatarId,
+          url: avatar.gltf_url
         }
       ]
     }).catch(err => console.error("Error updating profile:", err.message));
