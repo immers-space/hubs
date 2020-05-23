@@ -36,7 +36,8 @@ function ensureAvatarNodes(json) {
 AFRAME.registerComponent("player-info", {
   schema: {
     avatarSrc: { type: "string" },
-    avatarType: { type: "string", default: AVATAR_TYPES.SKINNABLE }
+    avatarType: { type: "string", default: AVATAR_TYPES.SKINNABLE },
+    immersId: { type: "string" }
   },
   init() {
     this.displayName = null;
@@ -88,8 +89,11 @@ AFRAME.registerComponent("player-info", {
     window.APP.store.removeEventListener("statechanged", this.update);
   },
 
-  update() {
+  update(oldData) {
     this.applyProperties();
+    if (this.data.immersId !== oldData.immersId) {
+      this.el.emit("immers-id-changed", this.data.immersId);
+    }
   },
   updateDisplayName(e) {
     if (!this.playerSessionId && this.isLocalPlayerInfo) {

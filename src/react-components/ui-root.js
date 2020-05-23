@@ -141,6 +141,7 @@ class UIRoot extends Component {
     isSupportAvailable: PropTypes.bool,
     presenceLogEntries: PropTypes.array,
     presences: PropTypes.object,
+    friends: PropTypes.array,
     sessionId: PropTypes.string,
     subscriptions: PropTypes.object,
     initialIsSubscribed: PropTypes.bool,
@@ -215,7 +216,8 @@ class UIRoot extends Component {
     objectInfo: null,
     objectSrc: "",
     isObjectListExpanded: false,
-    isPresenceListExpanded: false
+    isPresenceListExpanded: false,
+    hasUnreadFriendUpdate: false,
   };
 
   constructor(props) {
@@ -268,6 +270,12 @@ class UIRoot extends Component {
           }
         }, 0);
       });
+    }
+    if (prevProps.friends !== this.props.friends && !this.state.isPresenceListExpanded) {
+      this.setState({ hasUnreadFriendUpdate: true });
+      this.props.scene.addState("notification");
+    } else if (!this.state.hasUnreadFriendUpdate) {
+      this.props.scene.removeState("notification");
     }
   }
 
@@ -2091,6 +2099,8 @@ class UIRoot extends Component {
             <PresenceList
               history={this.props.history}
               presences={this.props.presences}
+              friends={this.props.friends}
+              friendsUpdated={this.state.hasUnreadFriendUpdate}
               sessionId={this.props.sessionId}
               signedIn={this.state.signedIn}
               email={this.props.store.state.credentials.email}
@@ -2099,7 +2109,7 @@ class UIRoot extends Component {
               expanded={!this.state.isObjectListExpanded && this.state.isPresenceListExpanded}
               onExpand={expand => {
                 if (expand) {
-                  this.setState({ isPresenceListExpanded: expand, isObjectListExpanded: false });
+                  this.setState({ isPresenceListExpanded: expand, isObjectListExpanded: false, hasUnreadFriendUpdate: false });
                 } else {
                   this.setState({ isPresenceListExpanded: expand });
                 }

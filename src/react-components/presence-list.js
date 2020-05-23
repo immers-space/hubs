@@ -47,6 +47,8 @@ export function navigateToClientInfo(history, clientId) {
 export default class PresenceList extends Component {
   static propTypes = {
     presences: PropTypes.object,
+    friends: PropTypes.array,
+    friendsUpdated: PropTypes.bool,
     history: PropTypes.object,
     sessionId: PropTypes.string,
     signedIn: PropTypes.bool,
@@ -117,6 +119,34 @@ export default class PresenceList extends Component {
     );
   };
 
+  domForFriend = (locActivity) => {
+    const profile = locActivity.actor
+    const place = locActivity.target
+    return (
+      <WithHoverSound key={profile.id}>
+        <div className={styles.row}>
+          <div className={styles.icon}>
+            <i><FontAwesomeIcon icon={faUsers} /></i>
+          </div>
+          <div
+            className={classNames({
+              [styles.listItem]: true
+            })}
+          >
+            <div>
+              <span>{profile.name}</span>
+            </div>
+          </div>
+          <div className={styles.location}>
+            {locActivity.type === 'Arrive' ? (
+              <span>Online at <a href={place.url}>{place.name}</a></span>
+            ) : (<span>{locActivity.type === 'Leave' ? 'Offline' : ''}</span>)}
+          </div>
+        </div>
+      </WithHoverSound>
+    );
+  };
+
   componentDidMount() {
     document.querySelector(".a-canvas").addEventListener(
       "mouseup",
@@ -139,6 +169,9 @@ export default class PresenceList extends Component {
             {Object.entries(this.props.presences || {})
               .filter(([k]) => k !== this.props.sessionId)
               .map(this.domForPresence)}
+          </div>
+          <div className={classNames({ [styles.rows]: true, [styles.friends]: true })}>
+            {this.props.friends.map(this.domForFriend)}
           </div>
           <div className={styles.signIn}>
             {this.props.signedIn ? (
@@ -178,6 +211,7 @@ export default class PresenceList extends Component {
         >
           <FontAwesomeIcon icon={faUsers} />
           <span className={rootStyles.occupantCount}>{occupantCount}</span>
+          {this.props.friendsUpdated && (<span className={styles.notifier}>*</span>)}
         </button>
         {this.props.expanded && this.renderExpandedList()}
       </div>

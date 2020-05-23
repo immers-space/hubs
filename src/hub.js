@@ -3,6 +3,7 @@ import configs from "./utils/configs";
 import "./utils/theme";
 import "@babel/polyfill";
 import "./utils/debug-log";
+import * as immers from "./utils/immers";
 
 console.log(`App version: ${process.env.BUILD_VERSION || "?"}`);
 
@@ -179,6 +180,8 @@ if (isEmbed && !qs.get("embed_token")) {
   throw new Error("no embed token");
 }
 
+immers.auth(store);
+
 THREE.Object3D.DefaultMatrixAutoUpdate = false;
 window.APP.quality =
   window.APP.store.state.preferences.materialQualitySetting === "low"
@@ -217,6 +220,8 @@ import { getAvailableVREntryTypes, VR_DEVICE_AVAILABILITY, ONLY_SCREEN_AVAILABLE
 import detectConcurrentLoad from "./utils/concurrent-load-detector";
 
 import qsTruthy from "./utils/qs_truthy";
+
+import "./components/immers-follow-button";
 
 const PHOENIX_RELIABLE_NAF = "phx-reliable";
 NAF.options.firstSyncSource = PHOENIX_RELIABLE_NAF;
@@ -674,6 +679,8 @@ function handleHubChannelJoined(entryManager, hubChannel, messageDispatch, data)
   } else {
     connectToScene();
   }
+
+  immers.initialize(store, scene, remountUI);
 }
 
 async function runBotMode(scene, entryManager) {
@@ -886,7 +893,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   remountUI({
     performConditionalSignIn,
     embed: isEmbed,
-    showPreload: isEmbed
+    showPreload: isEmbed,
+    showSignInDialog: !store.state.profile.handle
   });
   entryManager.performConditionalSignIn = performConditionalSignIn;
   entryManager.init();

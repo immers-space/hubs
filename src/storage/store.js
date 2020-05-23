@@ -20,8 +20,13 @@ export const SCHEMA = {
       type: "object",
       additionalProperties: false,
       properties: {
+        handle: { type: "string" },
         displayName: { type: "string", pattern: "^[A-Za-z0-9 -]{3,32}$" },
         avatarId: { type: "string" },
+        id: { type: "string" },
+        outbox: { type: "string" },
+        inbox: { type: "string" },
+        followers: { type: "string" },
         // personalAvatarId is obsolete, but we need it here for backwards compatibility.
         personalAvatarId: { type: "string" }
       }
@@ -33,6 +38,15 @@ export const SCHEMA = {
       properties: {
         token: { type: ["null", "string"] },
         email: { type: ["null", "string"] }
+      }
+    },
+
+    immerCredentials: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        token: { type: ["null", "string"] },
+        home: { type: ["null", "string"] }
       }
     },
 
@@ -157,6 +171,7 @@ export const SCHEMA = {
   properties: {
     profile: { $ref: "#/definitions/profile" },
     credentials: { $ref: "#/definitions/credentials" },
+    immerCredentials: { $ref: "#/definitions/immerCredentials" },
     activity: { $ref: "#/definitions/activity" },
     settings: { $ref: "#/definitions/settings" },
     preferences: { $ref: "#/definitions/preferences" },
@@ -190,6 +205,7 @@ export default class Store extends EventTarget {
       activity: {},
       settings: {},
       credentials: {},
+      immerCredentials: {},
       profile: {},
       confirmedDiscordRooms: [],
       confirmedBroadcastedRooms: [],

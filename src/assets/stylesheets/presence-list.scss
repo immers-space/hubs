@@ -79,3 +79,30 @@
   margin-left: 4px;
   text-decoration: none;
 }
+
+:local(.friends) {
+  border-top: 1px solid var(--panel-rule-color);
+  margin-top: 12px;
+  padding-top: 12px;
+
+
+}
+
+:local(.location) {
+  font-size: 0.8em;
+  color: $grey-text;
+  a {
+    text-decoration: underline;
+    text-decoration-color: var(--panel-link-underline-color);
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 3px;
+  }
+}
+
+:local(.notifier) {
+  color: #FF3464;
+  font-size: 1.1em;
+  position: relative;
+  top: -3px;
+}
