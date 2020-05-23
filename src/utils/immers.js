@@ -112,10 +112,8 @@ export async function getFriends(actorObj) {
 // perform oauth flow to get access token for local or remote user
 export async function auth(store) {
   const loc = new URL(window.location);
-  const params = loc.searchParams;
   const hashParams = new URLSearchParams(loc.hash.substring(1));
   const hubUri = new URL(window.location);
-  hubUri.seach = new URLSearchParams({ hub_id: params.get("hub_id") }).toString();
   hubUri.hash = "";
   place = await getObject(`${localImmer}/o/immer`);
   place.url = hubUri; // include room id
