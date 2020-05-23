@@ -5,9 +5,7 @@ import sceneEditorLogo from "../assets/images/editor-logo.png";
 import pdfjs from "pdfjs-dist";
 
 // Read configs from global variable if available, otherwise use the process.env injected from build.
-const configs = {
-  IMMERS_SERVER: "https://localhost:8081"
-};
+const configs = {};
 let isAdmin = false;
 
 [
@@ -18,6 +16,7 @@ let isAdmin = false;
   "SENTRY_DSN",
   "GA_TRACKING_ID",
   "SHORTLINK_DOMAIN",
+  "IMMERS_SERVER",
   "BASE_ASSETS_PATH"
 ].forEach(x => {
   const el = document.querySelector(`meta[name='env:${x.toLowerCase()}']`);
