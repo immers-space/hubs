@@ -1,6 +1,8 @@
 import io from "socket.io-client";
+import { WebIO } from "@gltf-transform/core";
 import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
+const gltfIo = new WebIO({ mode: "cors", credentials: "include" });
 const localImmer = configs.IMMERS_SERVER;
 let homeImmer;
 let place;
@@ -109,6 +111,21 @@ export async function getFriends(actorObj) {
   return response.json();
 }
 
+export async function uploadAvatar(profile, buffer) {
+  const response = await fetch(profile.avatarUpload, {
+    method: "POST",
+    body: buffer,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/octet-stream"
+    }
+  });
+  if (!response.ok) {
+    throw new Error("Error uploading avatar");
+  }
+  return response.text();
+}
+
 // perform oauth flow to get access token for local or remote user
 export async function auth(store) {
   const loc = new URL(window.location);
@@ -147,6 +164,7 @@ export async function initialize(store, scene, remountUI) {
   // immers profile
   const actorObj = await getActor();
   if (actorObj) {
+    actorObj.endpoints = actorObj.endpoints || {};
     const initialAvi = store.state.profile.avatarId;
     store.update({
       profile: {
@@ -155,7 +173,9 @@ export async function initialize(store, scene, remountUI) {
         displayName: actorObj.name,
         inbox: actorObj.inbox,
         outbox: actorObj.outbox,
-        followers: actorObj.followers
+        followers: actorObj.followers,
+        friends: actorObj.endpoints.friends,
+        avatarUpload: actorObj.endpoints.avatar
       },
       activity: {
         hasChangedName: true
@@ -215,13 +235,16 @@ export async function initialize(store, scene, remountUI) {
   scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
     const avatar = await fetchAvatar(profile.avatarId);
+    const gltfDoc = await gltfIo.read(avatar.gltf_url);
+    const glbBuffer = gltfIo.packGLB(gltfDoc);
+    const avatarUrl = await uploadAvatar(profile, glbBuffer);
+    store.update({ profile: { avatarId: avatarUrl } });
     updateProfile(profile, {
       name: profile.displayName,
       attachment: [
         {
           type: "Avatar",
-          content: profile.avatarId,
-          url: avatar.gltf_url
+          url: avatarUrl
         }
       ]
     }).catch(err => console.error("Error updating profile:", err.message));

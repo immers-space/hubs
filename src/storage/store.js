@@ -27,6 +27,8 @@ export const SCHEMA = {
         outbox: { type: "string" },
         inbox: { type: "string" },
         followers: { type: "string" },
+        friends: { type: ["undefined", "string"] },
+        avatarUpload: { type: ["undefined", "string"] },
         // personalAvatarId is obsolete, but we need it here for backwards compatibility.
         personalAvatarId: { type: "string" }
       }
