@@ -119,18 +119,11 @@ export async function auth(store) {
   place.url = hubUri; // include room id
 
   if (hashParams.has("access_token")) {
-    // record user's home server in case redirected during auth
-    let home;
-    try {
-      home = new URL(document.referrer);
-      home = `${home.protocol}//${home.host}`;
-    } catch (ignore) {
-      home = null;
-    }
     store.update({
       immerCredentials: {
         token: hashParams.get("access_token"),
-        home
+        // record user's home server in case redirected during auth
+        home: hashParams.get("issuer")
       }
     });
     window.location.hash = "";
