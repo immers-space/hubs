@@ -37,16 +37,9 @@ export const SCHEMA = {
       additionalProperties: false,
       properties: {
         token: { type: ["null", "string"] },
-        email: { type: ["null", "string"] }
-      }
-    },
-
-    immerCredentials: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        token: { type: ["null", "string"] },
-        home: { type: ["null", "string"] }
+        email: { type: ["null", "string"] },
+        immerToken: { type: ["null", "string"] },
+        immerHome: { type: ["null", "string"] }
       }
     },
 
@@ -167,7 +160,6 @@ export const SCHEMA = {
   properties: {
     profile: { $ref: "#/definitions/profile" },
     credentials: { $ref: "#/definitions/credentials" },
-    immerCredentials: { $ref: "#/definitions/immerCredentials" },
     activity: { $ref: "#/definitions/activity" },
     settings: { $ref: "#/definitions/settings" },
     preferences: { $ref: "#/definitions/preferences" },
@@ -201,7 +193,6 @@ export default class Store extends EventTarget {
       activity: {},
       settings: {},
       credentials: {},
-      immerCredentials: {},
       profile: {},
       confirmedDiscordRooms: [],
       confirmedBroadcastedRooms: [],
