@@ -156,9 +156,6 @@ export async function initialize(store, scene, remountUI) {
         inbox: actorObj.inbox,
         outbox: actorObj.outbox,
         followers: actorObj.followers
-      },
-      activity: {
-        hasChangedName: true
       }
     });
   }
@@ -224,7 +221,15 @@ export async function initialize(store, scene, remountUI) {
           url: avatar.gltf_url
         }
       ]
-    }).catch(err => console.error("Error updating profile:", err.message));
+    })
+      .then(() => {
+        store.update({
+          activity: {
+            hasChangedName: true
+          }
+        });
+      })
+      .catch(err => console.error("Error updating profile:", err.message));
   });
 
   // entity interactions
