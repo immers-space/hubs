@@ -2,6 +2,13 @@ import io from "socket.io-client";
 import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 const localImmer = configs.IMMERS_SERVER;
+// avoid race between auth and initialize code
+let resolveAuth;
+let rejectAuth;
+const authPromise = new Promise((resolve, reject) => {
+  resolveAuth = resolve;
+  rejectAuth = reject;
+});
 let homeImmer;
 let place;
 let token;
@@ -42,7 +49,7 @@ export async function getActor() {
     }
   });
   if (!response.ok) {
-    return null;
+    throw new Error(`Error fetching actor ${response.status} ${response.statusText}`);
   }
   return response.json();
 }
@@ -119,17 +126,16 @@ export async function auth(store) {
   place.url = hubUri; // include room id
 
   if (hashParams.has("access_token")) {
-    store.update({
-      immerCredentials: {
-        token: hashParams.get("access_token"),
-        // record user's home server in case redirected during auth
-        home: hashParams.get("issuer")
-      }
-    });
+    // not safe to update store here, will be saved later in initialize()
+    token = hashParams.get("access_token");
+    homeImmer = hashParams.get("issuer");
     window.location.hash = "";
+  } else {
+    token = store.state.credentials.immerToken;
+    homeImmer = store.state.credentials.homeImmer;
   }
 
-  if (!store.state.immerCredentials.token) {
+  const redirectToAuth = () => {
     const redirect = new URL(`${localImmer}/auth/authorize`);
     redirect.search = new URLSearchParams({
       client_id: place.id,
@@ -137,31 +143,39 @@ export async function auth(store) {
       response_type: "token"
     }).toString();
     window.location = redirect;
-    return;
-  } else {
-    token = store.state.immerCredentials.token;
-    homeImmer = store.state.immerCredentials.home;
+  };
+
+  // will cause re-auth when expired/invalid tokens are rejected
+  authPromise.catch(redirectToAuth);
+  // check token validity & get actor object
+  if (!token) {
+    return redirectToAuth();
+  }
+  try {
+    resolveAuth(await getActor());
+  } catch (err) {
+    rejectAuth(err);
   }
 }
 export async function initialize(store, scene, remountUI) {
   // immers profile
-  const actorObj = await getActor();
-  if (actorObj) {
-    const initialAvi = store.state.profile.avatarId;
-    store.update({
-      profile: {
-        id: actorObj.id,
-        avatarId: getAvatarFromActor(actorObj) || initialAvi,
-        displayName: actorObj.name,
-        inbox: actorObj.inbox,
-        outbox: actorObj.outbox,
-        followers: actorObj.followers
-      },
-      activity: {
-        hasChangedName: true
-      }
-    });
-  }
+  const actorObj = await authPromise;
+  const initialAvi = store.state.profile.avatarId;
+  store.update({
+    profile: {
+      id: actorObj.id,
+      avatarId: getAvatarFromActor(actorObj) || initialAvi,
+      displayName: actorObj.name,
+      inbox: actorObj.inbox,
+      outbox: actorObj.outbox,
+      followers: actorObj.followers
+    },
+    credentials: {
+      immerToken: token,
+      // record user's home server in case redirected during auth
+      immerHome: homeImmer
+    }
+  });
   const immerSocket = io(homeImmer, {
     transportOptions: {
       polling: {
@@ -224,7 +238,15 @@ export async function initialize(store, scene, remountUI) {
           url: avatar.gltf_url
         }
       ]
-    }).catch(err => console.error("Error updating profile:", err.message));
+    })
+      .then(() => {
+        store.update({
+          activity: {
+            hasChangedName: true
+          }
+        });
+      })
+      .catch(err => console.error("Error updating profile:", err.message));
   });
 
   // entity interactions
