@@ -217,7 +217,7 @@ class UIRoot extends Component {
     objectSrc: "",
     isObjectListExpanded: false,
     isPresenceListExpanded: false,
-    hasUnreadFriendUpdate: false,
+    hasUnreadFriendUpdate: false
   };
 
   constructor(props) {
@@ -928,6 +928,7 @@ class UIRoot extends Component {
   };
 
   onStoreChanged = () => {
+    if (!this.props.hub) return;
     const broadcastedRoomConfirmed = this.props.store.state.confirmedBroadcastedRooms.includes(this.props.hub.hub_id);
     if (broadcastedRoomConfirmed !== this.state.broadcastTipDismissed) {
       this.setState({ broadcastTipDismissed: broadcastedRoomConfirmed });
