@@ -133,7 +133,7 @@ export async function auth(store) {
     window.location.hash = "";
   } else {
     token = store.state.credentials.immerToken;
-    homeImmer = store.state.credentials.homeImmer;
+    homeImmer = store.state.credentials.immerHome;
   }
 
   const redirectToAuth = () => {
