@@ -2,7 +2,7 @@ import io from "socket.io-client";
 import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.0.5");
+console.log("immers.space client v0.1.0");
 // avoid race between auth and initialize code
 let resolveAuth;
 let rejectAuth;
