@@ -80,6 +80,7 @@ AFRAME.GLTFModelPlus.registerComponent("scale-audio-feedback", "scale-audio-feed
 AFRAME.GLTFModelPlus.registerComponent("morph-audio-feedback", "morph-audio-feedback");
 AFRAME.GLTFModelPlus.registerComponent("animation-mixer", "animation-mixer");
 AFRAME.GLTFModelPlus.registerComponent("loop-animation", "loop-animation");
+AFRAME.GLTFModelPlus.registerComponent("uv-scroll", "uv-scroll");
 AFRAME.GLTFModelPlus.registerComponent(
   "box-collider",
   "shape-helper",
@@ -207,6 +208,8 @@ async function mediaInflator(el, componentName, componentData, components) {
 
   if (componentName === "video" || componentName === "image") {
     mediaOptions.projection = componentData.projection;
+    mediaOptions.alphaMode = componentData.alphaMode;
+    mediaOptions.alphaCutoff = componentData.alphaCutoff;
   }
 
   if (componentName === "video" || componentName === "audio") {

@@ -9,6 +9,7 @@ import { loadGLTF } from "../components/gltf-model-plus";
 import { disposeNode, findNode } from "../utils/three-utils";
 import { ensureAvatarMaterial, MAT_NAME } from "../utils/avatar-utils";
 import { createImageBitmap, disposeImageBitmap } from "../utils/image-bitmap-utils";
+import { proxiedUrlFor } from "../utils/media-url-utils";
 import styles from "../assets/stylesheets/avatar-preview.scss";
 
 const TEXTURE_PROPS = {
@@ -189,7 +190,8 @@ class AvatarPreview extends Component {
 
   async loadCurrentAvatarGltfUrl() {
     const newLoadId = ++this.loadId;
-    const gltf = await this.loadPreviewAvatar(this.props.avatarGltfUrl);
+    const url = proxiedUrlFor(this.props.avatarGltfUrl);
+    const gltf = await this.loadPreviewAvatar(url);
     // If we had started loading another avatar while we were loading this one, throw this one away
     if (newLoadId !== this.loadId) return;
     if (gltf && this.props.onGltfLoaded) this.props.onGltfLoaded(gltf);
@@ -216,8 +218,7 @@ class AvatarPreview extends Component {
   loadPreviewAvatar = async avatarGltfUrl => {
     let gltf;
     try {
-      const technique = window.APP.quality === "low" ? "KHR_materials_unlit" : "pbrMetallicRoughness";
-      gltf = await loadGLTF(avatarGltfUrl, "model/gltf", technique, null, ensureAvatarMaterial);
+      gltf = await loadGLTF(avatarGltfUrl, "model/gltf", null, ensureAvatarMaterial);
     } catch (e) {
       console.error("Failed to load avatar preview", e);
       this.setState({ loading: false, error: true });
@@ -271,14 +272,22 @@ class AvatarPreview extends Component {
         orm_map: TEXTURE_PROPS["orm_map"].map(getImage)
       };
 
-      await Promise.all([
-        this.applyMaps({}, this.props), // Apply initial maps
-        // TODO apply environment map to secondary materials as well
-        createDefaultEnvironmentMap().then(t => {
-          this.previewMesh.material.envMap = t;
-          this.previewMesh.material.needsUpdate = true;
-        })
-      ]);
+      const dependencies = [
+        this.applyMaps({}, this.props) // Apply initial maps
+      ];
+
+      // Low and medium quality materials don't use environment maps
+      if (window.APP.store.materialQualitySetting === "high") {
+        dependencies.push(
+          // TODO apply environment map to secondary materials as well
+          createDefaultEnvironmentMap().then(t => {
+            this.previewMesh.material.envMap = t;
+            this.previewMesh.material.needsUpdate = true;
+          })
+        );
+      }
+
+      await Promise.all(dependencies);
     } else {
       this.originalMaps = {};
     }
@@ -293,6 +302,17 @@ class AvatarPreview extends Component {
     this.imageBitmaps[name] = image;
     TEXTURE_PROPS[name].forEach(prop => {
       const texture = this.previewMesh.material[prop];
+
+      // Low quality materials are missing normal maps
+      if (prop === "normalMap" && window.APP.store.materialQualitySetting === "low") {
+        return;
+      }
+
+      // Medium Quality materials are missing metalness and roughness maps
+      if ((prop === "roughnessMap" || prop === "metalnessMap") && window.APP.store.materialQualitySetting !== "high") {
+        return;
+      }
+
       texture.image = image;
       texture.needsUpdate = true;
     });
@@ -305,8 +325,11 @@ class AvatarPreview extends Component {
     delete this.imageBitmaps[name];
     this.originalMaps[name].forEach((bm, i) => {
       const texture = this.previewMesh.material[TEXTURE_PROPS[name][i]];
-      texture.image = bm;
-      texture.needsUpdate = true;
+
+      if (texture) {
+        texture.image = bm;
+        texture.needsUpdate = true;
+      }
     });
   };
 
@@ -350,4 +373,4 @@ class AvatarPreview extends Component {
   }
 }
 
-export default injectIntl(AvatarPreview, { withRef: true });
+export default injectIntl(AvatarPreview, { forwardRef: true });

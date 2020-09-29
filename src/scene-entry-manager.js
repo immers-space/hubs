@@ -43,6 +43,8 @@ export default class SceneEntryManager {
     this.whenSceneLoaded(() => {
       this.rightCursorController.components["cursor-controller"].enabled = false;
       this.leftCursorController.components["cursor-controller"].enabled = false;
+
+      this._setupBlocking();
     });
   };
 
@@ -53,7 +55,7 @@ export default class SceneEntryManager {
   enterScene = async (mediaStream, enterInVR, muteOnEntry) => {
     document.getElementById("viewing-camera").removeAttribute("scene-preview-camera");
 
-    if (isDebug) {
+    if (isDebug && NAF.connection.adapter.session) {
       NAF.connection.adapter.session.options.verbose = true;
     }
 
@@ -77,7 +79,6 @@ export default class SceneEntryManager {
     }
 
     this._setupPlayerRig();
-    this._setupBlocking();
     this._setupKicking();
     this._setupMedia(mediaStream);
     this._setupCamera();
@@ -438,14 +439,30 @@ export default class SceneEntryManager {
     };
 
     this.scene.addEventListener("action_share_camera", () => {
-      shareVideoMediaStream({
+      const constraints = {
         video: {
-          mediaSource: "camera",
           width: isIOS ? { max: 1280 } : { max: 1280, ideal: 720 },
           frameRate: 30
         }
         //TODO: Capture audio from camera?
-      });
+      };
+
+      // check preferences
+      const store = window.APP.store;
+      const preferredCamera = store.state.preferences.preferredCamera || "default";
+      switch (preferredCamera) {
+        case "default":
+          constraints.video.mediaSource = "camera";
+          break;
+        case "user":
+        case "environment":
+          constraints.video.facingMode = preferredCamera;
+          break;
+        default:
+          constraints.video.deviceId = preferredCamera;
+          break;
+      }
+      shareVideoMediaStream(constraints);
     });
 
     this.scene.addEventListener("action_share_screen", () => {
@@ -478,6 +495,7 @@ export default class SceneEntryManager {
       }
 
       for (const track of mediaStream.getVideoTracks()) {
+        track.stop(); // Stop video track to remove the "Stop screen sharing" bar right away.
         mediaStream.removeTrack(track);
       }
 
@@ -522,7 +540,6 @@ export default class SceneEntryManager {
 
       if (myCamera) {
         myCamera.parentNode.removeChild(myCamera);
-        this.scene.removeState("camera");
       } else {
         const entity = document.createElement("a-entity");
         entity.setAttribute("networked", { template: "#interactable-camera" });
@@ -531,11 +548,7 @@ export default class SceneEntryManager {
           offset: { x: 0, y: 0, z: -1.5 }
         });
         this.scene.appendChild(entity);
-        this.scene.addState("camera");
       }
-
-      // Need to wait a frame so camera is registered with system.
-      setTimeout(() => this.scene.emit("camera_toggled"));
     });
 
     this.scene.addEventListener("photo_taken", e => this.hubChannel.sendMessage({ src: e.detail }, "photo"));
