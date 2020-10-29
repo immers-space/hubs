@@ -13,6 +13,12 @@ const authPromise = new Promise((resolve, reject) => {
 let homeImmer;
 let place;
 let token;
+let hubScene;
+const monetization = {
+  amountPaid: 0,
+  currency: undefined,
+  state: undefined
+};
 
 export function getAvatarFromActor(actorObj) {
   if (!actorObj.attachment) {
@@ -158,7 +164,30 @@ export async function auth(store) {
     rejectAuth(err);
   }
 }
+
+function onMonetizationStart() {
+  monetization.state = "started";
+  hubScene.emit("monetizationstarted");
+}
+function onMonetizationStop() {
+  monetization.state = "stopped";
+  hubScene.emit("monetizationstopped");
+}
+function onMonetizationProgress(event) {
+  const amount = Number.parseInt(event.detail.amount) * Math.pow(10, -event.detail.assetScale);
+  if (amount) {
+    monetization.amountPaid += amount;
+    monetization.currency = event.detail.assetCode;
+    hubScene.emit("monetizationprogress", {
+      amount,
+      totalAmount: monetization.amountPaid,
+      currency: monetization.currency
+    });
+  }
+}
+
 export async function initialize(store, scene, remountUI) {
+  hubScene = scene;
   // immers profile
   const actorObj = await authPromise;
   const initialAvi = store.state.profile.avatarId;
@@ -266,4 +295,14 @@ export async function initialize(store, scene, remountUI) {
     }
     follow(store.state.profile, event.detail).catch(err => console.err("Error sending follow request:", err.message));
   });
+
+  // monetization
+  if (document.monetization) {
+    if (document.monetization.state === "started") {
+      onMonetizationStart();
+    }
+    document.monetization.addEventListener("monetizationstart", onMonetizationStart);
+    document.monetization.addEventListener("monetizationstop", onMonetizationStop);
+    document.monetization.addEventListener("monetizationprogress", onMonetizationProgress);
+  }
 }
