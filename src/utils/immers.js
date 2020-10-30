@@ -185,6 +185,14 @@ function onMonetizationProgress(event) {
     });
   }
 }
+function setupMonetization() {
+  if (document.monetization.state === "started") {
+    onMonetizationStart();
+  }
+  document.monetization.addEventListener("monetizationstart", onMonetizationStart);
+  document.monetization.addEventListener("monetizationstop", onMonetizationStop);
+  document.monetization.addEventListener("monetizationprogress", onMonetizationProgress);
+}
 
 export async function initialize(store, scene, remountUI) {
   hubScene = scene;
@@ -296,13 +304,11 @@ export async function initialize(store, scene, remountUI) {
     follow(store.state.profile, event.detail).catch(err => console.err("Error sending follow request:", err.message));
   });
 
-  // monetization
-  if (document.monetization) {
-    if (document.monetization.state === "started") {
-      onMonetizationStart();
-    }
-    document.monetization.addEventListener("monetizationstart", onMonetizationStart);
-    document.monetization.addEventListener("monetizationstop", onMonetizationStop);
-    document.monetization.addEventListener("monetizationprogress", onMonetizationProgress);
+  // wait until scene is fully loaded to trigger monetization events so creators don't
+  // have to worry about whether entities are loaded
+  if (document.monetization && hubScene.is("loaded")) {
+    setupMonetization();
+  } else if (document.monetization) {
+    hubScene.addEventListener("loading_finished", () => setupMonetization(), { once: true });
   }
 }
