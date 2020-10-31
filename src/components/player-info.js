@@ -37,7 +37,8 @@ AFRAME.registerComponent("player-info", {
     avatarSrc: { type: "string" },
     avatarType: { type: "string", default: AVATAR_TYPES.SKINNABLE },
     muted: { default: false },
-    immersId: { type: "string" }
+    immersId: { type: "string" },
+    monetized: { type: "boolean" }
   },
   init() {
     this.displayName = null;
@@ -67,6 +68,10 @@ AFRAME.registerComponent("player-info", {
     registerComponentInstance(this, "player-info");
   },
   remove() {
+    this.el.sceneEl.emit("immers-player-monetization", {
+      monetized: false,
+      immersId: this.data.immersId
+    });
     deregisterComponentInstance(this, "player-info");
   },
   play() {
@@ -105,6 +110,20 @@ AFRAME.registerComponent("player-info", {
     this.applyProperties();
     if (this.data.immersId !== oldData.immersId) {
       this.el.emit("immers-id-changed", this.data.immersId);
+      this.el.sceneEl.emit("immers-player-monetization", {
+        monetized: false,
+        immersId: oldData.immersId
+      });
+      this.el.sceneEl.emit("immers-player-monetization", {
+        monetized: this.data.monetized,
+        immersId: this.data.immersId
+      });
+    }
+    if (this.data.monetized !== oldData.monetized) {
+      this.el.sceneEl.emit("immers-player-monetization", {
+        monetized: this.data.monetized,
+        immersId: this.data.immersId
+      });
     }
   },
   updateDisplayName(e) {

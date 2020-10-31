@@ -14,6 +14,7 @@ let homeImmer;
 let place;
 let token;
 let hubScene;
+let localPlayer;
 const monetization = {
   amountPaid: 0,
   currency: undefined,
@@ -167,11 +168,11 @@ export async function auth(store) {
 
 function onMonetizationStart() {
   monetization.state = "started";
-  hubScene.emit("monetizationstarted");
+  localPlayer.setAttribute("player-info", { monetized: true });
 }
 function onMonetizationStop() {
   monetization.state = "stopped";
-  hubScene.emit("monetizationstopped");
+  localPlayer.setAttribute("player-info", { monetized: false });
 }
 function onMonetizationProgress(event) {
   const amount = Number.parseInt(event.detail.amount) * Math.pow(10, -event.detail.assetScale);
@@ -196,6 +197,7 @@ function setupMonetization() {
 
 export async function initialize(store, scene, remountUI) {
   hubScene = scene;
+  localPlayer = document.getElementById("avatar-rig");
   // immers profile
   const actorObj = await authPromise;
   const initialAvi = store.state.profile.avatarId;

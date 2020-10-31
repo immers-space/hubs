@@ -1,8 +1,28 @@
-AFRAME.registerSystem("monetization-visible-system", {
+const players = {};
+
+AFRAME.registerSystem("monetization-visible", {
   init() {
     this.mo = new MutationObserver(this.onMutation);
     this.mo.observe(this.el, { subtree: true, childList: true });
+    this.onMonetizationChange = this.onMonetizationChange.bind(this);
+    this.entities = [];
+    this.el.addEventListener("immers-player-monetization", this.onMonetizationChange);
   },
+  play() {
+    this.el.addEventListener("immers-player-monetization", this.onMonetizationChange);
+  },
+  pause() {
+    this.el.removeEventListener("immers-player-monetization", this.onMonetizationChange);
+  },
+  registerMe(el) {
+    this.entities.push(el);
+  },
+
+  unregisterMe(el) {
+    const index = this.entities.indexOf(el);
+    this.entities.splice(index, 1);
+  },
+  // inject component into spoke scene entities (spoke saves objet names as classes)
   onMutation(records) {
     const mv = "monetization-visible";
     for (const record of records) {
@@ -14,6 +34,13 @@ AFRAME.registerSystem("monetization-visible-system", {
         }
       }
     }
+  },
+  onMonetizationChange(event) {
+    players[event.detail.immersId] = event.detail.monetized;
+    const numMonetized = Object.values(players).reduce((a, b) => a + b, 0);
+    for (const entity of this.entities) {
+      entity.components["monetization-visible"].checkMonetization(numMonetized);
+    }
   }
 });
 
@@ -21,26 +48,14 @@ AFRAME.registerComponent("monetization-visible", {
   schema: {
     monetized: { type: "boolean", default: false }
   },
+  checkMonetization(count) {
+    this.el.setAttribute("visible", count > 0);
+  },
   init() {
-    this.monetize = this.monetize.bind(this);
-    this.unmonetize = this.unmonetize.bind(this);
-  },
-  play() {
-    this.el.sceneEl.addEventListener("monetizationstarted", this.monetize);
-    this.el.sceneEl.addEventListener("monetizationstopped", this.unmonetize);
-    this.el.setAttribute("visible", this.monetized);
-  },
-  pause() {
-    this.el.sceneEl.removeEventListener("monetizationstarted", this.monetize);
-    this.el.sceneEl.removeEventListener("monetizationstopped", this.unmonetize);
-    this.el.setAttribute("visible", this.monetized);
-  },
-  monetize() {
-    this.monetized = true;
-    this.el.setAttribute("visible", true);
-  },
-  unmonetize() {
-    this.monetized = false;
     this.el.setAttribute("visible", false);
+    this.system.registerMe(this.el);
+  },
+  remove() {
+    this.system.unregisterMe(this.el);
   }
 });
