@@ -1,6 +1,7 @@
 import io from "socket.io-client";
 import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
+import { setupMonetization } from "./immers/monetization";
 const localImmer = configs.IMMERS_SERVER;
 console.log("immers.space client v0.1.1");
 // avoid race between auth and initialize code
@@ -15,11 +16,6 @@ let place;
 let token;
 let hubScene;
 let localPlayer;
-const monetization = {
-  amountPaid: 0,
-  currency: undefined,
-  state: undefined
-};
 
 export function getAvatarFromActor(actorObj) {
   if (!actorObj.attachment) {
@@ -166,35 +162,6 @@ export async function auth(store) {
   }
 }
 
-function onMonetizationStart() {
-  monetization.state = "started";
-  localPlayer.setAttribute("player-info", { monetized: true });
-}
-function onMonetizationStop() {
-  monetization.state = "stopped";
-  localPlayer.setAttribute("player-info", { monetized: false });
-}
-function onMonetizationProgress(event) {
-  const amount = Number.parseInt(event.detail.amount) * Math.pow(10, -event.detail.assetScale);
-  if (amount) {
-    monetization.amountPaid += amount;
-    monetization.currency = event.detail.assetCode;
-    hubScene.emit("monetizationprogress", {
-      amount,
-      totalAmount: monetization.amountPaid,
-      currency: monetization.currency
-    });
-  }
-}
-function setupMonetization() {
-  if (document.monetization.state === "started") {
-    onMonetizationStart();
-  }
-  document.monetization.addEventListener("monetizationstart", onMonetizationStart);
-  document.monetization.addEventListener("monetizationstop", onMonetizationStop);
-  document.monetization.addEventListener("monetizationprogress", onMonetizationProgress);
-}
-
 export async function initialize(store, scene, remountUI) {
   hubScene = scene;
   localPlayer = document.getElementById("avatar-rig");
@@ -306,11 +273,5 @@ export async function initialize(store, scene, remountUI) {
     follow(store.state.profile, event.detail).catch(err => console.err("Error sending follow request:", err.message));
   });
 
-  // wait until scene is fully loaded to trigger monetization events so creators don't
-  // have to worry about whether entities are loaded
-  if (document.monetization && hubScene.is("loaded")) {
-    setupMonetization();
-  } else if (document.monetization) {
-    hubScene.addEventListener("loading_finished", () => setupMonetization(), { once: true });
-  }
+  setupMonetization(hubScene, localPlayer);
 }

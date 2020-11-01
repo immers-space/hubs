@@ -1,3 +1,14 @@
+/* Simple use case for room monetization status. Certain Spoke entities are
+ * shown or hiden based on whether anyone in the room is monetized.
+ *
+ * To use without additional client customisation, add entities or groups in Spoke
+ * with the name "monetization-visible", and this
+ * component will attach to it and make it invisible unless someone in the
+ * room is monetized.
+ *
+ * For elements created via custom client extension,
+ * give them the "monetization-visible" component to enable to same behavior.
+ */
 const players = {};
 
 AFRAME.registerSystem("monetization-visible", {
@@ -22,7 +33,7 @@ AFRAME.registerSystem("monetization-visible", {
     const index = this.entities.indexOf(el);
     this.entities.splice(index, 1);
   },
-  // inject component into spoke scene entities (spoke saves objet names as classes)
+  // inject component into spoke scene entities (spoke saves names as classes)
   onMutation(records) {
     const mv = "monetization-visible";
     for (const record of records) {
