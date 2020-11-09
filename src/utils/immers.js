@@ -1,8 +1,9 @@
 import io from "socket.io-client";
 import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
+import { setupMonetization } from "./immers/monetization";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.1.0");
+console.log("immers.space client v0.1.1");
 // avoid race between auth and initialize code
 let resolveAuth;
 let rejectAuth;
@@ -13,6 +14,8 @@ const authPromise = new Promise((resolve, reject) => {
 let homeImmer;
 let place;
 let token;
+let hubScene;
+let localPlayer;
 
 export function getAvatarFromActor(actorObj) {
   if (!actorObj.attachment) {
@@ -158,7 +161,10 @@ export async function auth(store) {
     rejectAuth(err);
   }
 }
+
 export async function initialize(store, scene, remountUI) {
+  hubScene = scene;
+  localPlayer = document.getElementById("avatar-rig");
   // immers profile
   const actorObj = await authPromise;
   const initialAvi = store.state.profile.avatarId;
@@ -266,4 +272,6 @@ export async function initialize(store, scene, remountUI) {
     }
     follow(store.state.profile, event.detail).catch(err => console.err("Error sending follow request:", err.message));
   });
+
+  setupMonetization(hubScene, localPlayer);
 }
