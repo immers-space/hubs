@@ -3,7 +3,7 @@ import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.1.1");
+console.log("immers.space client v0.2.0");
 // avoid race between auth and initialize code
 let resolveAuth;
 let rejectAuth;
@@ -121,7 +121,7 @@ export async function getFriends(actorObj) {
 }
 
 // perform oauth flow to get access token for local or remote user
-export async function auth(store) {
+export async function auth(store, hub) {
   const loc = new URL(window.location);
   const hashParams = new URLSearchParams(loc.hash.substring(1));
   const hubUri = new URL(window.location);
@@ -144,7 +144,9 @@ export async function auth(store) {
     redirect.search = new URLSearchParams({
       client_id: place.id,
       redirect_uri: hubUri,
-      response_type: "token"
+      response_type: "token",
+      shortlink_domain: configs.SHORTLINK_DOMAIN,
+      entry_code: hub.entry_code
     }).toString();
     window.location = redirect;
   };

@@ -183,8 +183,6 @@ if (isEmbed && !qs.get("embed_token")) {
   throw new Error("no embed token");
 }
 
-immers.auth(store);
-
 THREE.Object3D.DefaultMatrixAutoUpdate = false;
 
 import "./components/owned-object-limiter";
@@ -498,6 +496,7 @@ function handleHubChannelJoined(entryManager, hubChannel, messageDispatch, data)
     }
   }
 
+  immers.auth(store, hub);
   console.log(`Janus host: ${hub.host}:${hub.port}`);
 
   remountUI({
