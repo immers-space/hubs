@@ -1,0 +1,12 @@
+authtoken: REDACTED-CHANGE-ME
+tunnels:
+  immer:
+    proto: http
+    addr: https://localhost:8081
+    hostname: immer.ngrok.io
+    host_header: hubs.local
+  hub:
+    proto: http
+    addr: https://hubs.local:8080
+    hostname: hubs.ngrok.io
+    host_header: hubs.local

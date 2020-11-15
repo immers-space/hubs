@@ -43,6 +43,10 @@ function createHTTPSConfig() {
               {
                 type: 2,
                 value: "hubs.local"
+              },
+              {
+                type: 2,
+                value: "hubs.ngrok.io"
               }
             ]
           }
@@ -172,9 +176,9 @@ async function fetchAppConfigAndEnvironmentVars() {
 
   process.env.RETICULUM_SERVER = host;
   process.env.SHORTLINK_DOMAIN = shortlink_domain;
-  process.env.CORS_PROXY_SERVER = "localhost:8080/cors-proxy";
+  process.env.CORS_PROXY_SERVER = "hubs.ngrok.io/cors-proxy";
   process.env.THUMBNAIL_SERVER = thumbnail_server;
-  process.env.NON_CORS_PROXY_DOMAINS = "hubs.local,localhost";
+  process.env.NON_CORS_PROXY_DOMAINS = "hubs.local,localhost,hubs.ngrok.io,dev.reticulum.io";
 
   return appConfig;
 }
@@ -211,11 +215,11 @@ module.exports = async (env, argv) => {
     if (env.localDev) {
       // Local Dev Environment (npm run local)
       Object.assign(process.env, {
-        HOST: "hubs.local",
-        RETICULUM_SOCKET_SERVER: "hubs.local",
+        HOST: "hubs.ngrok.io",
+        RETICULUM_SOCKET_SERVER: "hubs.ngrok.io",
         CORS_PROXY_SERVER: "hubs-proxy.local:4000",
-        NON_CORS_PROXY_DOMAINS: "hubs.local,dev.reticulum.io",
-        BASE_ASSETS_PATH: "https://hubs.local:8080/",
+        NON_CORS_PROXY_DOMAINS: "hubs.local,dev.reticulum.io,hubs.ngrok.io",
+        BASE_ASSETS_PATH: "https://hubs.ngrok.io/",
         RETICULUM_SERVER: "hubs.local:4000",
         POSTGREST_SERVER: "",
         ITA_SERVER: ""
@@ -226,7 +230,7 @@ module.exports = async (env, argv) => {
   // In production, the environment variables are defined in CI or loaded from ita and
   // the app config is injected into the head of the page by Reticulum.
 
-  const host = process.env.HOST_IP || env.localDev || env.remoteDev ? "hubs.local" : "localhost";
+  const host = "hubs.ngrok.io";
 
   const legacyBabelConfig = {
     presets: ["@babel/react", ["@babel/env", { targets: { ie: 11 } }]],
@@ -265,9 +269,9 @@ module.exports = async (env, argv) => {
     devServer: {
       https: createHTTPSConfig(),
       host: "0.0.0.0",
-      public: `${host}:8080`,
+      public: `${host}`,
       useLocalIp: true,
-      allowedHosts: [host, "hubs.local"],
+      allowedHosts: [host, "hubs.local", "hubs.ngrok.io"],
       headers: {
         "Access-Control-Allow-Origin": "*"
       },
@@ -297,7 +301,7 @@ module.exports = async (env, argv) => {
           const redirectLocation = req.header("location");
 
           if (redirectLocation) {
-            res.header("Location", "https://localhost:8080/cors-proxy/" + redirectLocation);
+            res.header("Location", "https://hubs.ngrok.io/cors-proxy/" + redirectLocation);
           }
 
           if (req.method === "OPTIONS") {
