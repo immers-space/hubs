@@ -148,6 +148,12 @@ export async function auth(store, hub) {
       shortlink_domain: configs.SHORTLINK_DOMAIN,
       entry_code: hub.entry_code
     }).toString();
+    // hide error messages caused by interrupting loading to redirect
+    try {
+      document.getElementById("ui-root").style.display = "none";
+    } catch (ignore) {
+      /* ignore */
+    }
     window.location = redirect;
   };
 
