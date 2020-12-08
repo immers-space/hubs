@@ -121,7 +121,7 @@ export async function getFriends(actorObj) {
 }
 
 // perform oauth flow to get access token for local or remote user
-export async function auth(store, hub) {
+export async function auth(store) {
   const loc = new URL(window.location);
   const hashParams = new URLSearchParams(loc.hash.substring(1));
   const hubUri = new URL(window.location);
@@ -144,9 +144,7 @@ export async function auth(store, hub) {
     redirect.search = new URLSearchParams({
       client_id: place.id,
       redirect_uri: hubUri,
-      response_type: "token",
-      shortlink_domain: configs.SHORTLINK_DOMAIN,
-      entry_code: hub.entry_code
+      response_type: "token"
     }).toString();
     // hide error messages caused by interrupting loading to redirect
     try {
