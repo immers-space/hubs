@@ -101,8 +101,8 @@
     "react-router": "^5.1.2",
     "react-router-dom": "^5.1.2",
     "screenfull": "^4.0.1",
-    "socket.io-client": "^2.3.0",
     "semver": "^7.3.2",
+    "socket.io-client": "^2.3.0",
     "three": "github:mozillareality/three.js#hubs/master",
     "three-ammo": "^1.0.11",
     "three-bmfont-text": "github:mozillareality/three-bmfont-text#hubs/master",
@@ -110,6 +110,7 @@
     "three-pathfinding": "github:MozillaReality/three-pathfinding#hubs/master2",
     "three-to-ammo": "github:infinitelee/three-to-ammo",
     "uuid": "^3.2.1",
+    "web-monetization-polyfill": "^1.0.0",
     "webrtc-adapter": "^6.0.2",
     "zip-loader": "^1.1.0"
   },
