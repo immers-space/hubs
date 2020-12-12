@@ -66,6 +66,7 @@ export default class PresenceList extends Component {
     presences: PropTypes.object,
     friends: PropTypes.array,
     friendsUpdated: PropTypes.bool,
+    handle: PropTypes.string,
     history: PropTypes.object,
     sessionId: PropTypes.string,
     signedIn: PropTypes.bool,
@@ -178,14 +179,29 @@ export default class PresenceList extends Component {
     );
   };
 
-  domForFriend = (locActivity) => {
-    const profile = locActivity.actor
-    const place = locActivity.target
+  domForFriend = locActivity => {
+    const profile = locActivity.actor;
+    const place = locActivity.target;
+    let placeUrl = place ? place.url : undefined;
+    // inject user handle into desintation url so they don't have to type it
+    if (placeUrl) {
+      try {
+        const url = new URL(placeUrl);
+        const search = new URLSearchParams(url.search);
+        search.set("me", this.props.handle);
+        url.search = search.toString();
+        placeUrl = url.toString();
+      } catch (ignore) {
+        /* if fail, leave original url unchanged */
+      }
+    }
     return (
       <WithHoverSound key={profile.id}>
         <div className={styles.row}>
           <div className={styles.icon}>
-            <i><FontAwesomeIcon icon={faUsers} /></i>
+            <i>
+              <FontAwesomeIcon icon={faUsers} />
+            </i>
           </div>
           <div
             className={classNames({
@@ -197,9 +213,13 @@ export default class PresenceList extends Component {
             </div>
           </div>
           <div className={styles.location}>
-            {locActivity.type === 'Arrive' ? (
-              <span>Online at <a href={place.url}>{place.name}</a></span>
-            ) : (<span>{locActivity.type === 'Leave' ? 'Offline' : ''}</span>)}
+            {locActivity.type === "Arrive" ? (
+              <span>
+                Online at <a href={placeUrl}>{place.name}</a>
+              </span>
+            ) : (
+              <span>{locActivity.type === "Leave" ? "Offline" : ""}</span>
+            )}
           </div>
         </div>
       </WithHoverSound>
@@ -245,7 +265,7 @@ export default class PresenceList extends Component {
               .map(this.domForPresence)}
           </div>
           <div className={classNames({ [styles.rows]: true, [styles.friends]: true })}>
-            {this.props.friends.map(this.domForFriend)}
+            {this.props.friends && this.props.friends.map(this.domForFriend)}
           </div>
           <div className={styles.signIn}>
             {this.props.signedIn ? (
@@ -285,7 +305,7 @@ export default class PresenceList extends Component {
         >
           <FontAwesomeIcon icon={faUsers} />
           <span className={rootStyles.occupantCount}>{occupantCount}</span>
-          {this.props.friendsUpdated && (<span className={styles.notifier}>*</span>)}
+          {this.props.friendsUpdated && <span className={styles.notifier}>*</span>}
         </button>
         {this.props.expanded && this.renderExpandedList()}
       </div>

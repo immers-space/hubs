@@ -140,9 +140,12 @@ export async function auth(store) {
   }
 
   const redirectToAuth = () => {
+    // send to token endpoint at local immer, it handles
+    // detecting remote users and sending them on to their home to login
     const redirect = new URL(`${localImmer}/auth/authorize`);
     redirect.search = new URLSearchParams({
       client_id: place.id,
+      // hubUri may contain user's handle (me param) when linking between immers
       redirect_uri: hubUri,
       response_type: "token"
     }).toString();
@@ -179,6 +182,7 @@ export async function initialize(store, scene, remountUI) {
       id: actorObj.id,
       avatarId: getAvatarFromActor(actorObj) || initialAvi,
       displayName: actorObj.name,
+      handle: `${actorObj.preferredUsername}[${new URL(homeImmer).host}]`,
       inbox: actorObj.inbox,
       outbox: actorObj.outbox,
       followers: actorObj.followers
@@ -224,7 +228,7 @@ export async function initialize(store, scene, remountUI) {
     if (store.state.profile.id) {
       const profile = store.state.profile;
       friendsCol = await getFriends(profile);
-      remountUI({ friends: friendsCol.orderedItems });
+      remountUI({ friends: friendsCol.orderedItems, handle: profile.handle });
       // update follow button for new friends
       const players = window.APP.componentRegistry["player-info"];
       if (players) {

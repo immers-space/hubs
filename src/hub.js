@@ -895,7 +895,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     performConditionalSignIn,
     embed: isEmbed,
     showPreload: isEmbed,
-    showSignInDialog: !store.state.profile.handle
+    showSignInDialog: false
   });
   entryManager.performConditionalSignIn = performConditionalSignIn;
   entryManager.init();

@@ -138,6 +138,7 @@ class UIRoot extends Component {
     presenceLogEntries: PropTypes.array,
     presences: PropTypes.object,
     friends: PropTypes.array,
+    handle: PropTypes.string,
     sessionId: PropTypes.string,
     subscriptions: PropTypes.object,
     initialIsSubscribed: PropTypes.bool,
@@ -2068,6 +2069,7 @@ class UIRoot extends Component {
                 presences={this.props.presences}
                 friends={this.props.friends}
                 friendsUpdated={this.state.hasUnreadFriendUpdate}
+                handle={this.props.handle}
                 sessionId={this.props.sessionId}
                 signedIn={this.state.signedIn}
                 email={this.props.store.state.credentials.email}
