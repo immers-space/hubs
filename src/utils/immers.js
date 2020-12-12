@@ -122,10 +122,21 @@ export async function getFriends(actorObj) {
 
 // perform oauth flow to get access token for local or remote user
 export async function auth(store) {
-  const loc = new URL(window.location);
-  const hashParams = new URLSearchParams(loc.hash.substring(1));
+  // copy of URL used for sharing/authorization request
   const hubUri = new URL(window.location);
+  const hashParams = new URLSearchParams(hubUri.hash.substring(1));
+  const searchParams = new URLSearchParams(hubUri.search);
+  let handle;
+
+  // don't share your token!
   hubUri.hash = "";
+  // users handle may be passed from previous immer
+  if (searchParams.has("me")) {
+    handle = searchParams.get("me");
+    // remove your handle before sharing with friends
+    searchParams.delete("me");
+    hubUri.search = searchParams.toString();
+  }
   place = await getObject(`${localImmer}/o/immer`);
   place.url = hubUri; // include room id
 
@@ -143,12 +154,17 @@ export async function auth(store) {
     // send to token endpoint at local immer, it handles
     // detecting remote users and sending them on to their home to login
     const redirect = new URL(`${localImmer}/auth/authorize`);
-    redirect.search = new URLSearchParams({
+    const redirectParams = new URLSearchParams({
       client_id: place.id,
-      // hubUri may contain user's handle (me param) when linking between immers
+      // hub link with room id
       redirect_uri: hubUri,
       response_type: "token"
-    }).toString();
+    });
+    if (handle) {
+      // pass to auth to prefill login form
+      redirectParams.set("me", handle);
+    }
+    redirect.search = redirectParams.toString();
     // hide error messages caused by interrupting loading to redirect
     try {
       document.getElementById("ui-root").style.display = "none";

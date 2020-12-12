@@ -105,6 +105,13 @@ export default class PresenceList extends Component {
     }
   };
 
+  actorIsPresent = actorId => {
+    return Object.values(this.props.presences).find(data => {
+      const meta = data.metas[data.metas.length - 1];
+      return meta.profile && meta.profile.id === actorId;
+    });
+  };
+
   domForPresence = ([sessionId, data]) => {
     const meta = data.metas[data.metas.length - 1];
     const context = meta.context;
@@ -183,8 +190,12 @@ export default class PresenceList extends Component {
     const profile = locActivity.actor;
     const place = locActivity.target;
     let placeUrl = place ? place.url : undefined;
-    // inject user handle into desintation url so they don't have to type it
-    if (placeUrl) {
+    let status = "";
+    let isHere;
+    if (this.actorIsPresent(profile.id)) {
+      isHere = true;
+    } else if (placeUrl) {
+      // inject user handle into desintation url so they don't have to type it
       try {
         const url = new URL(placeUrl);
         const search = new URLSearchParams(url.search);
@@ -194,6 +205,17 @@ export default class PresenceList extends Component {
       } catch (ignore) {
         /* if fail, leave original url unchanged */
       }
+    }
+    if (isHere) {
+      status = "Online here";
+    } else if (locActivity.type === "Arrive") {
+      status = (
+        <span>
+          Online at <a href={placeUrl}>{place.name}</a>
+        </span>
+      );
+    } else if (locActivity.type === "Leave") {
+      status = "Offline";
     }
     return (
       <WithHoverSound key={profile.id}>
@@ -212,15 +234,7 @@ export default class PresenceList extends Component {
               <span>{profile.name}</span>
             </div>
           </div>
-          <div className={styles.location}>
-            {locActivity.type === "Arrive" ? (
-              <span>
-                Online at <a href={placeUrl}>{place.name}</a>
-              </span>
-            ) : (
-              <span>{locActivity.type === "Leave" ? "Offline" : ""}</span>
-            )}
-          </div>
+          <div className={styles.location}>{status}</div>
         </div>
       </WithHoverSound>
     );
