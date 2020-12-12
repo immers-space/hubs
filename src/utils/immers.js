@@ -3,7 +3,7 @@ import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.2.0");
+console.log("immers.space client v0.3.0");
 // avoid race between auth and initialize code
 let resolveAuth;
 let rejectAuth;
