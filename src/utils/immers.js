@@ -3,7 +3,7 @@ import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.2.0");
+console.log("immers.space client v0.3.0");
 // avoid race between auth and initialize code
 let resolveAuth;
 let rejectAuth;
@@ -122,10 +122,21 @@ export async function getFriends(actorObj) {
 
 // perform oauth flow to get access token for local or remote user
 export async function auth(store) {
-  const loc = new URL(window.location);
-  const hashParams = new URLSearchParams(loc.hash.substring(1));
+  // copy of URL used for sharing/authorization request
   const hubUri = new URL(window.location);
+  const hashParams = new URLSearchParams(hubUri.hash.substring(1));
+  const searchParams = new URLSearchParams(hubUri.search);
+  let handle;
+
+  // don't share your token!
   hubUri.hash = "";
+  // users handle may be passed from previous immer
+  if (searchParams.has("me")) {
+    handle = searchParams.get("me");
+    // remove your handle before sharing with friends
+    searchParams.delete("me");
+    hubUri.search = searchParams.toString();
+  }
   place = await getObject(`${localImmer}/o/immer`);
   place.url = hubUri; // include room id
 
@@ -140,12 +151,20 @@ export async function auth(store) {
   }
 
   const redirectToAuth = () => {
+    // send to token endpoint at local immer, it handles
+    // detecting remote users and sending them on to their home to login
     const redirect = new URL(`${localImmer}/auth/authorize`);
-    redirect.search = new URLSearchParams({
+    const redirectParams = new URLSearchParams({
       client_id: place.id,
+      // hub link with room id
       redirect_uri: hubUri,
       response_type: "token"
-    }).toString();
+    });
+    if (handle) {
+      // pass to auth to prefill login form
+      redirectParams.set("me", handle);
+    }
+    redirect.search = redirectParams.toString();
     // hide error messages caused by interrupting loading to redirect
     try {
       document.getElementById("ui-root").style.display = "none";
@@ -179,6 +198,7 @@ export async function initialize(store, scene, remountUI) {
       id: actorObj.id,
       avatarId: getAvatarFromActor(actorObj) || initialAvi,
       displayName: actorObj.name,
+      handle: `${actorObj.preferredUsername}[${new URL(homeImmer).host}]`,
       inbox: actorObj.inbox,
       outbox: actorObj.outbox,
       followers: actorObj.followers
@@ -224,7 +244,7 @@ export async function initialize(store, scene, remountUI) {
     if (store.state.profile.id) {
       const profile = store.state.profile;
       friendsCol = await getFriends(profile);
-      remountUI({ friends: friendsCol.orderedItems });
+      remountUI({ friends: friendsCol.orderedItems, handle: profile.handle });
       // update follow button for new friends
       const players = window.APP.componentRegistry["player-info"];
       if (players) {
