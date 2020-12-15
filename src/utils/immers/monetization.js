@@ -14,6 +14,8 @@
  *      totalAmoint: Number, amount received so far during this session
  *      currency: String, currency of the transation
  */
+import "web-monetization-polyfill";
+
 const monetization = {
   amountPaid: 0,
   currency: undefined,
@@ -49,12 +51,7 @@ function onMonetizationProgress(event) {
   }
 }
 
-// checks availability and adds event handlers
 function onSceneLoaded() {
-  if (!document.monetization) {
-    hubScene.emit("immers-monetization-unavailable");
-    return;
-  }
   if (document.monetization.state === "started") {
     onMonetizationStart();
   }
