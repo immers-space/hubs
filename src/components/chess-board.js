@@ -1,22 +1,34 @@
+import * as Chess from 'chess.js';
 import {
 	addMedia
 } from '../utils/media-utils';
 import {
 	getAbsoluteHref
 } from '../utils/media-url-utils';
-import rookB from '../assets/models/chess/rook-b.glb';
-import knightB from '../assets/models/chess/knight-b.glb';
-import bishopB from '../assets/models/chess/bishop-b.glb';
-import queenB from '../assets/models/chess/queen-b.glb';
-import kingB from '../assets/models/chess/king-b.glb';
-import pawnB from '../assets/models/chess/pawn-b.glb';
-import rookW from '../assets/models/chess/rook-w.glb';
-import knightW from '../assets/models/chess/knight-w.glb';
-import bishopW from '../assets/models/chess/bishop-w.glb';
-import queenW from '../assets/models/chess/queen-w.glb';
-import kingW from '../assets/models/chess/king-w.glb';
-import pawnW from '../assets/models/chess/pawn-w.glb';
-
+import rookB from '../assets/models/chess/black_rook.glb';
+import knightB from '../assets/models/chess/black_knight.glb';
+import bishopB from '../assets/models/chess/black_bishop.glb';
+import queenB from '../assets/models/chess/black_queen.glb';
+import kingB from '../assets/models/chess/black_king.glb';
+import pawnB from '../assets/models/chess/black_pawn.glb';
+import rookW from '../assets/models/chess/white_rook.glb';
+import knightW from '../assets/models/chess/white_knight.glb';
+import bishopW from '../assets/models/chess/white_bishop.glb';
+import queenW from '../assets/models/chess/white_queen.glb';
+import kingW from '../assets/models/chess/white_king.glb';
+import pawnW from '../assets/models/chess/white_pawn.glb';
+// import rookB from '../assets/models/chess/rook-b.glb';
+// import knightB from '../assets/models/chess/knight-b.glb';
+// import bishopB from '../assets/models/chess/bishop-b.glb';
+// import queenB from '../assets/models/chess/queen-b.glb';
+// import kingB from '../assets/models/chess/king-b.glb';
+// import pawnB from '../assets/models/chess/pawn-b.glb';
+// import rookW from '../assets/models/chess/rook-w.glb';
+// import knightW from '../assets/models/chess/knight-w.glb';
+// import bishopW from '../assets/models/chess/bishop-w.glb';
+// import queenW from '../assets/models/chess/queen-w.glb';
+// import kingW from '../assets/models/chess/king-w.glb';
+// import pawnW from '../assets/models/chess/pawn-w.glb';
 
 window.AFRAME.registerComponent('chess-board', {
 	schema: {
@@ -29,28 +41,59 @@ window.AFRAME.registerComponent('chess-board', {
 		},
 		preventThrowing: {
 			default: true
+		},
+		invertKnights: {
+			default: true
+		},
+		scaleDefault: {
+			default: 2
+		},
+		yCorrections: {
+			default: '0 0 0 0 0 0' // k q b n r p
 		}
 	},
 	init: function () {
 		this.tick = AFRAME.utils.throttleTick(this.tick, 300, this);
 		this.pieceEls = [];
+		this.startGame = this.startGame.bind(this);
 		this.buildBoard = this.buildBoard.bind(this);
 		this.getRankFromPosition = this.getRankFromPosition.bind(this);
 		this.getFileFromPosition = this.getFileFromPosition.bind(this);
 		this.getPositionFromRank = this.getPositionFromRank.bind(this);
 		this.getPositionFromFile = this.getPositionFromFile.bind(this);
-		this.positionToSquare = this.positionToSquare.bind(this);
+		this.getSquareFromPosition = this.getSquareFromPosition.bind(this);
 		this.snapPiece = this.snapPiece.bind(this);
 		this.normalizeCoordinate = this.normalizeCoordinate.bind(this);
 		this.denormalizeCoordinate = this.denormalizeCoordinate.bind(this);
 		this.interactionHandler = this.interactionHandler.bind(this);
 		this.moveTo = this.moveTo.bind(this);
+		this.onPieceHeld = this.onPieceHeld.bind(this);
+		this.onPieceGoBack = this.onPieceGoBack.bind(this);
+		this.onPieceDropped = this.onPieceDropped.bind(this);
+		this.populateMoves = this.populateMoves.bind(this);
+		this.resetPieceRotation = this.resetPieceRotation.bind(this);
+		this.getPieceFromSquare = this.getPieceFromSquare.bind(this);
+		this.pieceCaptured = this.pieceCaptured.bind(this);
 
+		const yCorrections = this.data.yCorrections.split(" ");
+		this.yCorrections = {
+			k: parseFloat(yCorrections[0]),
+			q: parseFloat(yCorrections[1]),
+			b: parseFloat(yCorrections[2]),
+			n: parseFloat(yCorrections[3]),
+			r: parseFloat(yCorrections[4]),
+			p: parseFloat(yCorrections[5])
+		}
+		
 		this.buildBoard();
 		setTimeout(()=>{
 			// TODO: fix init error instead of timeout hack
 			this.buildSet();
 		},5000);
+		this.startGame();
+	},
+	startGame: function() {
+		this.el.chess = new Chess();
 	},
 	update: function () {},
 	remove: function () {},
@@ -141,27 +184,31 @@ window.AFRAME.registerComponent('chess-board', {
 				contentOrigin,
 				null,
 				!(src instanceof MediaStream),
-				true,
+				false,
 				true, {},
 				true,
 				this.el
 			)
-			entity.removeAttribute('listed-media');
-			const pieceScale = (piece.type === 'p') ? this.data.squareSize / 0.28 : this.data.squareSize / 0.28;
+			let pieceScale = this.data.squareSize / this.data.scaleDefault;
+			entity.setAttribute('scale', `${pieceScale} ${pieceScale} ${pieceScale}`);
 			const file = piece.initialSquare.substr(0,1);
 			const rank = piece.initialSquare.substr(1,1);
 			const pieceX = this.getPositionFromFile(file);
 			const pieceZ = this.getPositionFromRank(rank);
-			const initialPosition = `${pieceX} ${this.el.pieceY} ${pieceZ}`;
-			entity.setAttribute('scale', `${pieceScale} ${pieceScale} ${pieceScale}`);
-			entity.setAttribute('position', initialPosition);
 			entity.pieceData = {
 				color: piece.color,
 				type: piece.type,
 				initialSquare: piece.initialSquare,
+				lastSquare: piece.initialSquare,
 				lastPosition: entity.getAttribute('position'),
-				currentPosition: entity.getAttribute('position')
+				currentPosition: entity.getAttribute('position'),
+				moves: [],
+				wasHeld: false,
+				pieceY: this.el.pieceY + this.yCorrections[piece.type]
 			};
+			const initialPosition = `${pieceX} ${entity.pieceData.pieceY} ${pieceZ}`;
+			entity.setAttribute('position', initialPosition);
+			this.resetPieceRotation(entity);
 			// entity.setAttribute('floaty-object', '', true);
 			// entity.removeAttribute('floaty-object');
 			entity.setAttribute('listed-media', '', true);
@@ -170,13 +217,13 @@ window.AFRAME.registerComponent('chess-board', {
 			entity.removeAttribute('scalable-when-grabbed');
 			entity.setAttribute('hoverable-visuals', '', true);
 			entity.removeAttribute('hoverable-visuals');
+			// entity.setAttribute('is-remote-hover-target', '', true);
+			// entity.removeAttribute('is-remote-hover-target');
 			this.pieceEls.push(entity);
 		});
 
-		this.cursor = document.createElement('a-box');
-		this.cursor.setAttribute('height', this.data.squareSize / 4);
-		this.cursor.setAttribute('width', this.data.squareSize / 4);
-		this.cursor.setAttribute('depth', this.data.squareSize / 4);
+		this.cursor = document.createElement('a-sphere');
+		this.cursor.setAttribute('radius', this.data.squareSize / 8);
 		this.el.appendChild(this.cursor);
 	},
 	isOnBoard(piece) {
@@ -302,62 +349,139 @@ window.AFRAME.registerComponent('chess-board', {
 		}
 		return destinationZ;
 	},
-	positionToSquare(position) {
+	getSquareFromPosition(position) {
 		const file = this.getFileFromPosition(position);
 		const rank = this.getRankFromPosition(position);
+		const square = `${file}${rank}`;
 		return {
+			square,
 			file,
 			rank
 		};
 	},
 	snapPiece(piece) {
-		const destinationSquare = this.positionToSquare(piece.getAttribute('position'));
+		const destinationSquare = this.getSquareFromPosition(piece.getAttribute('position'));
 		let destinationX = this.getPositionFromFile(destinationSquare.file);
 		let destinationZ = this.getPositionFromRank(destinationSquare.rank);
 		if (destinationX !== null && destinationZ !== null) {
 			const isMoved = destinationX !== piece.pieceData.lastPosition.x ||
-				this.el.pieceY !== piece.pieceData.lastPosition.y ||
+				piece.pieceData.pieceY !== piece.pieceData.lastPosition.y ||
 				destinationZ !== piece.pieceData.lastPosition.z;
 			if (isMoved) {
-				this.moveTo(piece, destinationSquare);
-				console.log(`Piece type: ${piece.pieceData.type} (color: ${piece.pieceData.color}) moved to ${destinationSquare.file}${destinationSquare.rank}`);
+				this.moveTo(piece, destinationSquare.square);
 				this.cursor.setAttribute('visible', 'false');
 			}
 		}
 	},
-	interactionHandler(piece) {
-		const interaction = AFRAME.scenes[0].systems.interaction;
-		const isHeld = interaction && interaction.isHeld(piece);
+	populateMoves(piece) {
+		const lastSquare = this.getSquareFromPosition(piece.pieceData.lastPosition).square;		
+		const moves = this.el.chess.moves({square: lastSquare, verbose: true}).map(m => m.to);
+		piece.pieceData.moves = moves;
+	},
+	onPieceHeld(piece) {
+		if (piece.pieceData.moves.length === 0) {
+			this.populateMoves(piece);
+		}
 		const position = piece.getAttribute('position');
-		if (isHeld) {
-			this.cursor.setAttribute('color', '#00cc00');
-			const cursorHeight = this.data.squareSize * 1.6;
-			this.cursor.setAttribute('position', `${position.x} ${cursorHeight} ${position.z}`);
-			this.cursor.setAttribute('visible', 'true');
-			if (this.isOnBoard(piece) === false) {
-				this.cursor.setAttribute('color', '#cc0000');
-			}
-		} else {
-			if (this.isOnBoard(piece) === false) {
-				const lastSquare = this.positionToSquare(piece.pieceData.lastPosition);
-				console.log(`Piece type: ${piece.pieceData.type} (color: ${piece.pieceData.color}) invalid move, return to last square: ${lastSquare.file}${lastSquare.rank} --- ${piece.pieceData.lastPosition.x} ${piece.pieceData.lastPosition.y} ${piece.pieceData.lastPosition.z}`);
-				this.moveTo(piece, lastSquare);
-				this.cursor.setAttribute('visible', 'false');
-			} else {
-				const destinationSquare = this.positionToSquare(piece.getAttribute('position'));
-				let destinationX = this.getPositionFromFile(destinationSquare.file);
-				let destinationZ = this.getPositionFromRank(destinationSquare.rank);
-				if (destinationX !== null && destinationZ !== null) {
-					const isMoved = destinationX !== piece.pieceData.lastPosition.x ||
-						this.el.pieceY !== piece.pieceData.lastPosition.y ||
-						destinationZ !== piece.pieceData.lastPosition.z;
-					if (isMoved) {
-						if (this.data.snapToSquare) {
-							this.snapPiece(piece);
-						}
+		const cursorHeight = this.data.squareSize * 1.6;
+		const square = this.getSquareFromPosition(position).square;
+		const isSquareValid = piece.pieceData.moves.indexOf(square) !== -1 || square === piece.pieceData.lastSquare;
+		this.cursor.setAttribute('color', '#00cc00');
+		this.cursor.setAttribute('position', `${position.x} ${cursorHeight} ${position.z}`);
+		this.cursor.setAttribute('visible', 'true');
+		if (this.isOnBoard(piece) === false || isSquareValid === false) {
+			this.cursor.setAttribute('color', '#cc0000');
+		}
+		piece.pieceData.wasHeld = true;
+	},
+	onPieceGoBack(piece) {
+		this.moveTo(piece, piece.pieceData.lastSquare);
+		this.cursor.setAttribute('visible', 'false');
+	},
+	onPieceDropped(piece) {
+		const destinationSquare = this.getSquareFromPosition(piece.getAttribute('position'));
+		const destinationX = this.getPositionFromFile(destinationSquare.file);
+		const destinationZ = this.getPositionFromRank(destinationSquare.rank);
+		const currentY = piece.getAttribute('position').y;
+		if (destinationX !== null && destinationZ !== null) {
+			const isPositionChanged = destinationX !== piece.pieceData.lastPosition.x ||
+				currentY !== piece.pieceData.lastPosition.y ||
+				destinationZ !== piece.pieceData.lastPosition.z;
+			if (isPositionChanged) {
+				const move = this.el.chess.move({from: piece.pieceData.lastSquare, to: destinationSquare.square});
+				if (move) {
+					const isCapture = move.flags.indexOf('c') !== -1;
+					const isQueensideCastle = move.flags.indexOf('q') !== -1;
+					const isKingsideCastle = move.flags.indexOf('k') !== -1;
+					const isEnPassant = move.flags.indexOf('e') !== -1;
+					const isPromotion = move.flags.indexOf('p') !== -1;
+					if (isCapture) {
+						const capturedPiece = this.getPieceFromSquare(move.to);
+						this.pieceCaptured(capturedPiece);
+					}
+					if (isQueensideCastle) {
+						const fromSquare = (move.color === 'b') ? 'a8' : 'a1';
+						const toSquare = (move.color === 'b') ? 'd8' : 'd1';
+						const rook = this.getPieceFromSquare(fromSquare);
+						this.moveTo(rook, toSquare);
+					}
+					if (isKingsideCastle) {
+						const fromSquare = (move.color === 'b') ? 'h8' : 'h1';
+						const toSquare = (move.color === 'b') ? 'f8' : 'f1';
+						const rook = this.getPieceFromSquare(fromSquare);
+						this.moveTo(rook, toSquare);
+					}
+					if (isEnPassant) {
+						const fromRank = move.from.substr(1, 1);
+						const toFile = move.to.substr(0, 1);
+						const capturedPawn = this.getPieceFromSquare(`${toFile}${fromRank}`);
+						this.pieceCaptured(capturedPawn);
+					}
+					if (isPromotion) {
+						// TODO
+					}
+				}
+
+				if (!move || piece.pieceData.lastSquare === destinationSquare.square) {
+					this.onPieceGoBack(piece);
+				} else if (move) {
+					if (this.data.snapToSquare) {
+						this.snapPiece(piece);
 					}
 				}
 			}
+		}
+	},
+	pieceCaptured(piece) {
+		const currentPosition = piece.getAttribute('position');
+		const newPosition = `${currentPosition.x} ${this.el.pieceY * 2.5} ${currentPosition.z}`;
+		piece.setAttribute('position', newPosition);
+		piece.setAttribute('visible', 'false');
+		piece.pieceData.lastSquare = '';
+	},
+	getPieceFromSquare(square) {
+		const piece = this.pieceEls.filter(p => p.pieceData.lastSquare === square)[0];
+		return piece;
+	},
+	interactionHandler(piece) {
+		const interaction = AFRAME.scenes[0].systems.interaction;
+		const isHeld = interaction && interaction.isHeld(piece);
+		if (isHeld) {
+			this.onPieceHeld(piece);
+		} else if (piece.pieceData.wasHeld) {
+			if (this.isOnBoard(piece) === false) {
+				this.onPieceGoBack(piece)
+			} else {
+				this.onPieceDropped(piece);
+			}
+			piece.pieceData.wasHeld = false;
+		}
+	},
+	resetPieceRotation(piece) {
+		if (this.data.invertKnights === true && piece.pieceData.type === 'n') {
+			piece.setAttribute('rotation', '0 180 0');
+		} else {
+			piece.setAttribute('rotation', '0 0 0');
 		}
 	},
 	moveTo(piece, square) {
@@ -374,14 +498,15 @@ window.AFRAME.registerComponent('chess-board', {
 		} else {
 			return false;
 		}
-		const position = {x: this.getPositionFromFile(file), y: this.el.pieceY,  z: this.getPositionFromRank(rank)};
-
+		const position = {x: this.getPositionFromFile(file), y: piece.pieceData.pieceY,  z: this.getPositionFromRank(rank)};
 		if (this.data.preventThrowing) {
 			piece.setAttribute('body-helper', 'type: static;');
 		}
 		piece.setAttribute('position', position, true);
-		piece.setAttribute('rotation', '0 0 0');
+		this.resetPieceRotation(piece);
 		piece.pieceData.lastPosition = position;
+		piece.pieceData.lastSquare = `${file}${rank}`;
+		this.populateMoves(piece);
 		if (this.data.preventThrowing) {
 			piece.setAttribute('body-helper', '');
 		}
