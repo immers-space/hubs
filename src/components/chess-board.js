@@ -17,18 +17,6 @@ import bishopW from '../assets/models/chess/white_bishop.glb';
 import queenW from '../assets/models/chess/white_queen.glb';
 import kingW from '../assets/models/chess/white_king.glb';
 import pawnW from '../assets/models/chess/white_pawn.glb';
-// import rookB from '../assets/models/chess/rook-b.glb';
-// import knightB from '../assets/models/chess/knight-b.glb';
-// import bishopB from '../assets/models/chess/bishop-b.glb';
-// import queenB from '../assets/models/chess/queen-b.glb';
-// import kingB from '../assets/models/chess/king-b.glb';
-// import pawnB from '../assets/models/chess/pawn-b.glb';
-// import rookW from '../assets/models/chess/rook-w.glb';
-// import knightW from '../assets/models/chess/knight-w.glb';
-// import bishopW from '../assets/models/chess/bishop-w.glb';
-// import queenW from '../assets/models/chess/queen-w.glb';
-// import kingW from '../assets/models/chess/king-w.glb';
-// import pawnW from '../assets/models/chess/pawn-w.glb';
 
 window.AFRAME.registerComponent('chess-board', {
 	schema: {
@@ -50,6 +38,12 @@ window.AFRAME.registerComponent('chess-board', {
 		},
 		yCorrections: {
 			default: '0 0 0 0 0 0' // k q b n r p
+		},
+		drawBoard: {
+			default: true
+		},
+		wireframeBoard: {
+			default: false
 		}
 	},
 	init: function () {
@@ -74,7 +68,16 @@ window.AFRAME.registerComponent('chess-board', {
 		this.resetPieceRotation = this.resetPieceRotation.bind(this);
 		this.getPieceFromSquare = this.getPieceFromSquare.bind(this);
 		this.pieceCaptured = this.pieceCaptured.bind(this);
-
+		this.teardownSet = this.teardownSet.bind(this);
+	},
+	startGame: function() {
+		this.el.chess = new Chess();
+	},
+	update: function () {
+		this.teardownSet();
+		while(this.el.firstChild) {
+			this.el.removeChild(this.el.firstChild);
+		}
 		const yCorrections = this.data.yCorrections.split(" ");
 		this.yCorrections = {
 			k: parseFloat(yCorrections[0]),
@@ -85,17 +88,23 @@ window.AFRAME.registerComponent('chess-board', {
 			p: parseFloat(yCorrections[5])
 		}
 		
-		this.buildBoard();
+		if (this.data.drawBoard) {
+			this.buildBoard();
+		}
 		setTimeout(()=>{
 			// TODO: fix init error instead of timeout hack
 			this.buildSet();
 		},5000);
 		this.startGame();
 	},
-	startGame: function() {
-		this.el.chess = new Chess();
+	teardownSet() {
+		for (let i = 0; i < this.pieceEls.length; i++) {
+			const targetEl = this.pieceEls[i];
+			NAF.utils.takeOwnership(targetEl);
+	        targetEl.parentNode.removeChild(targetEl);
+		}
+		this.pieceEls = [];
 	},
-	update: function () {},
 	remove: function () {},
 	buildBoard: function() {
 		var offset = 0;
@@ -124,7 +133,9 @@ window.AFRAME.registerComponent('chess-board', {
 			box.setAttribute('height', this.data.squareSize);
 			box.setAttribute('width', this.data.squareSize);
 			box.setAttribute('depth', this.data.squareSize);
-			if (altColor) {
+			if (this.data.wireframeBoard) {
+				box.setAttribute('wireframe', 'true');
+			} else if (altColor) {
 				box.setAttribute('color', (i % 2 === 0) ? 'black' : 'white');
 			} else {
 				box.setAttribute('color', (i % 2 === 0) ? 'white' : 'black');
@@ -209,19 +220,18 @@ window.AFRAME.registerComponent('chess-board', {
 			const initialPosition = `${pieceX} ${entity.pieceData.pieceY} ${pieceZ}`;
 			entity.setAttribute('position', initialPosition);
 			this.resetPieceRotation(entity);
-			// entity.setAttribute('floaty-object', '', true);
-			// entity.removeAttribute('floaty-object');
 			entity.setAttribute('listed-media', '', true);
 			entity.removeAttribute('listed-media');
 			entity.setAttribute('scalable-when-grabbed', '', true);
 			entity.removeAttribute('scalable-when-grabbed');
 			entity.setAttribute('hoverable-visuals', '', true);
 			entity.removeAttribute('hoverable-visuals');
-			// entity.setAttribute('is-remote-hover-target', '', true);
-			// entity.removeAttribute('is-remote-hover-target');
+			setTimeout(() => {
+				// Temporary hack to remove pin/delete/etc menu
+				entity.firstChild.setAttribute('visible', 'false');
+			}, 5000);
 			this.pieceEls.push(entity);
 		});
-
 		this.cursor = document.createElement('a-sphere');
 		this.cursor.setAttribute('radius', this.data.squareSize / 8);
 		this.el.appendChild(this.cursor);
