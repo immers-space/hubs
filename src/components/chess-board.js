@@ -44,9 +44,13 @@ window.AFRAME.registerComponent('chess-board', {
 		},
 		wireframeBoard: {
 			default: false
+		},
+		teleportPlayers: {
+			default: false
 		}
 	},
 	init: function () {
+		this.state = this.el.sceneEl.systems.state.state;
 		this.tick = AFRAME.utils.throttleTick(this.tick, 300, this);
 		this.pieceEls = [];
 		this.startGame = this.startGame.bind(this);
@@ -67,18 +71,170 @@ window.AFRAME.registerComponent('chess-board', {
 		this.populateMoves = this.populateMoves.bind(this);
 		this.resetPieceRotation = this.resetPieceRotation.bind(this);
 		this.getPieceFromSquare = this.getPieceFromSquare.bind(this);
-		this.pieceCaptured = this.pieceCaptured.bind(this);
-		this.teardownSet = this.teardownSet.bind(this);
+		this.squareCaptured = this.squareCaptured.bind(this);
+		this.destroyAllPieces = this.destroyAllPieces.bind(this);
+		this.playColor = this.playColor.bind(this);
+		this.teleportPlayer = this.teleportPlayer.bind(this);
+		this.resetGame = this.resetGame.bind(this);
+		this.setPieceClaimed = this.setPieceClaimed.bind(this);
+		this.squarePromoted = this.squarePromoted.bind(this);
+		this.buildPiece = this.buildPiece.bind(this);
+		this.doMove = this.doMove.bind(this);
+
+		// Hubs Chat Commands
+		this.el.sceneEl.addEventListener('chess-command', (ev) => {
+			const command = ev.detail[0];
+			const id = NAF.clientId;
+			const profile = window.APP.store.state.profile;
+			switch(command) {
+				case 'play':
+					const color = ev.detail[1];
+					this.playColor(color, id, profile);
+				break;
+				case 'reset':
+					this.resetGame();
+				break;
+				case 'w':
+					this.playColor('white', id, profile);
+				break;
+				case 'b':
+					this.playColor('black', id, profile);
+				break;
+			}
+		});
+		NAF.connection.onConnect(() => {
+			// Networked State Broadcasts
+			NAF.connection.subscribeToDataChannel('setPlayer', (_, dataType, data) => {
+				this.el.sceneEl.emit('setPlayer', data);
+				if (this.state.imPlaying && this.state.opponentColor === data.color) {
+					this.state.opponentId = data.id;
+				}
+				if (data.pieces && data.id !== NAF.clientId) {
+					for (const p of data.pieces) {
+						this.setPieceClaimed(p);
+					}
+				}
+			});
+			NAF.connection.subscribeToDataChannel('addPiece', (_, dataType, data) => {
+				this.el.sceneEl.emit('addPiece', data);
+				this.setPieceClaimed(data);
+			});
+			NAF.connection.subscribeToDataChannel('updatePiece', (_, dataType, data) => {
+				this.el.sceneEl.emit('updatePiece', data);
+			});
+			NAF.connection.subscribeToDataChannel('removePiece', (_, dataType, oldPiece) => {
+				this.el.sceneEl.emit('removePiece', oldPiece);
+			});
+			NAF.connection.subscribeToDataChannel('resetChessState', () => {
+				this.el.sceneEl.emit('resetChessState');
+				this.el.chess = new Chess();
+			});
+			// Chess Engine Broadcasts
+			NAF.connection.subscribeToDataChannel('sync-move', (_, dataType, data) => {
+				this.el.chess.move(data);
+			});
+			NAF.connection.subscribeToDataChannel('capture-piece', (_, dataType, data) => {
+				if (this.state.imPlaying) {
+					const piece = this.getPieceFromSquare(data.square);
+					piece.parentNode.removeChild(piece);
+					this.el.sceneEl.emit('removePiece', { id: piece.id, color: piece.pieceData.color });
+					NAF.connection.broadcastData('removePiece', { id: piece.id, color: piece.pieceData.color });
+				}
+			});
+		});
+	},
+	setPieceClaimed(pieceData) {
+		// TODO: Retries may no longer be needed with new state system.
+		if (!pieceData.retryCount) {
+			pieceData.retryCount = 1;
+		}
+		let piece = document.querySelector(`#${pieceData.id}`);
+		if (piece) {
+			piece.setAttribute('listed-media', '', true);
+			piece.removeAttribute('listed-media');
+			piece.classList.remove('interactable');
+		} else if (pieceData.retryCount < 5) {
+			setTimeout(() => {
+				pieceData.retryCount += 1;
+				this.setPieceClaimed(pieceData);
+			}, 1000);
+		}
+	},
+	resetGame() {
+		this.destroyAllPieces();
+		this.startGame();
+	},
+	destroyAllPieces() {
+		const pieces = this.state.players.white.pieces.concat(this.state.players.black.pieces);
+		for (let i = 0; i < pieces.length; i++) {
+			const pieceEl = document.querySelector(`#${pieces[i].id}`);
+			if (pieceEl) {
+				NAF.utils.takeOwnership(pieceEl);
+				pieceEl.parentNode.removeChild(pieceEl);
+			}
+		}
+	},
+	playColor(color, id, profile) {
+		const colorAvailable = !this.state.players[color].id;
+		if (colorAvailable) {
+			this.el.sceneEl.emit('imPlaying', { color, id, profile });
+			NAF.connection.broadcastData('setPlayer', { color, id, profile });
+			this.buildSet(color);
+			this.teleportPlayer(color);
+			// When new players connect, send them information on current players directly.
+			document.body.addEventListener('clientConnected', (ev) => {
+				const playerData = {
+					id: NAF.clientId,
+					profile: window.APP.store.state.profile,
+					color: color,
+					pieces: this.state.players[color].pieces
+				};
+				NAF.connection.sendData(ev.detail.clientId, 'setPlayer', playerData);
+			});
+		}
+	},
+	teleportPlayer(color) {
+		if (this.data.teleportPlayers) {
+			this.el.sceneEl.systems['hubs-systems'].characterController.enableFly(true);
+			if (color === 'white') {
+				const destinationX = this.getPositionFromFile('e') - (this.data.squareSize / 2);
+				const destinationY = this.data.squareSize * 4;
+				const destinationZ = this.getPositionFromRank('4') + (this.data.squareSize * 5);
+				document.querySelector('#avatar-rig').removeAttribute('offset-relative-to');
+				document.querySelector('#avatar-rig').setAttribute('offset-relative-to', {
+					target: this.el,
+					offset: { x: destinationX, y: destinationY, z: destinationZ }
+				  });
+				// TODO: Replace with teleport waypoint
+				const q = new THREE.Quaternion(-0.3046977306369239, 0.06475573883689406, 0.02076899796372855, 0.9500182292756172);
+				document.querySelector('#avatar-pov-node').object3D.setRotationFromQuaternion(q);
+			} else if (color === 'black') {
+				const destinationX = this.getPositionFromFile('e') - (this.data.squareSize / 2);
+				const destinationY = this.data.squareSize * 4;
+				const destinationZ = this.getPositionFromRank('8') - (this.data.squareSize * 4);
+				document.querySelector('#avatar-rig').removeAttribute('offset-relative-to');
+				document.querySelector('#avatar-rig').setAttribute('offset-relative-to', {
+					target: this.el,
+					offset: { x: destinationX, y: destinationY, z: destinationZ }
+				  });
+				// TODO: Replace with teleport waypoint
+				const q = new THREE.Quaternion(-0.007975245041697407, 0.9725746384887974, 0.229994800204803, 0.033724767066099344);
+				document.querySelector('#avatar-pov-node').object3D.setRotationFromQuaternion(q);
+			}
+		}
 	},
 	startGame: function() {
 		this.el.chess = new Chess();
+		this.el.sceneEl.emit('resetChessState');
+		if (NAF.connection.isConnected()) {
+			NAF.connection.broadcastData('resetChessState', {});
+		}
 	},
 	update: function () {
-		this.teardownSet();
 		while(this.el.firstChild) {
 			this.el.removeChild(this.el.firstChild);
 		}
-		const yCorrections = this.data.yCorrections.split(" ");
+		const yCorrections = this.data.yCorrections.split(' ');
 		this.yCorrections = {
 			k: parseFloat(yCorrections[0]),
 			q: parseFloat(yCorrections[1]),
@@ -87,23 +243,10 @@ window.AFRAME.registerComponent('chess-board', {
 			r: parseFloat(yCorrections[4]),
 			p: parseFloat(yCorrections[5])
 		}
-		
 		if (this.data.drawBoard) {
 			this.buildBoard();
 		}
-		setTimeout(()=>{
-			// TODO: fix init error instead of timeout hack
-			this.buildSet();
-		},5000);
 		this.startGame();
-	},
-	teardownSet() {
-		for (let i = 0; i < this.pieceEls.length; i++) {
-			const targetEl = this.pieceEls[i];
-			NAF.utils.takeOwnership(targetEl);
-	        targetEl.parentNode.removeChild(targetEl);
-		}
-		this.pieceEls = [];
 	},
 	remove: function () {},
 	buildBoard: function() {
@@ -148,93 +291,144 @@ window.AFRAME.registerComponent('chess-board', {
 		}
 		return rankContainer;
 	},
-	buildSet: function () {
-		const pieces = [
-			{type: 'r', color: 'b', initialSquare: 'a8', model: rookB},
-			{type: 'n', color: 'b', initialSquare: 'b8', model: knightB},
-			{type: 'b', color: 'b', initialSquare: 'c8', model: bishopB},
-			{type: 'q', color: 'b', initialSquare: 'd8', model: queenB},
-			{type: 'k', color: 'b', initialSquare: 'e8', model: kingB},
-			{type: 'b', color: 'b', initialSquare: 'f8', model: bishopB},
-			{type: 'n', color: 'b', initialSquare: 'g8', model: knightB},
-			{type: 'r', color: 'b', initialSquare: 'h8', model: rookB},
-			{type: 'p', color: 'b', initialSquare: 'a7', model: pawnB},
-			{type: 'p', color: 'b', initialSquare: 'b7', model: pawnB},
-			{type: 'p', color: 'b', initialSquare: 'c7', model: pawnB},
-			{type: 'p', color: 'b', initialSquare: 'd7', model: pawnB},
-			{type: 'p', color: 'b', initialSquare: 'e7', model: pawnB},
-			{type: 'p', color: 'b', initialSquare: 'f7', model: pawnB},
-			{type: 'p', color: 'b', initialSquare: 'g7', model: pawnB},
-			{type: 'p', color: 'b', initialSquare: 'h7', model: pawnB},
-			{type: 'r', color: 'w', initialSquare: 'a1', model: rookW},
-			{type: 'n', color: 'w', initialSquare: 'b1', model: knightW},
-			{type: 'b', color: 'w', initialSquare: 'c1', model: bishopW},
-			{type: 'q', color: 'w', initialSquare: 'd1', model: queenW},
-			{type: 'k', color: 'w', initialSquare: 'e1', model: kingW},
-			{type: 'b', color: 'w', initialSquare: 'f1', model: bishopW},
-			{type: 'n', color: 'w', initialSquare: 'g1', model: knightW},
-			{type: 'r', color: 'w', initialSquare: 'h1', model: rookW},
-			{type: 'p', color: 'w', initialSquare: 'a2', model: pawnW},
-			{type: 'p', color: 'w', initialSquare: 'b2', model: pawnW},
-			{type: 'p', color: 'w', initialSquare: 'c2', model: pawnW},
-			{type: 'p', color: 'w', initialSquare: 'd2', model: pawnW},
-			{type: 'p', color: 'w', initialSquare: 'e2', model: pawnW},
-			{type: 'p', color: 'w', initialSquare: 'f2', model: pawnW},
-			{type: 'p', color: 'w', initialSquare: 'g2', model: pawnW},
-			{type: 'p', color: 'w', initialSquare: 'h2', model: pawnW},
-		];
-		const contentOrigin = 1;
+	buildSet: function (mode = 'all') {
+		let pieces = [];
+		if (mode === 'white') {
+			pieces = [
+				{type: 'r', color: 'w', initialSquare: 'a1', model: rookW},
+				{type: 'n', color: 'w', initialSquare: 'b1', model: knightW},
+				{type: 'b', color: 'w', initialSquare: 'c1', model: bishopW},
+				{type: 'q', color: 'w', initialSquare: 'd1', model: queenW},
+				{type: 'k', color: 'w', initialSquare: 'e1', model: kingW},
+				{type: 'b', color: 'w', initialSquare: 'f1', model: bishopW},
+				{type: 'n', color: 'w', initialSquare: 'g1', model: knightW},
+				{type: 'r', color: 'w', initialSquare: 'h1', model: rookW},
+				{type: 'p', color: 'w', initialSquare: 'a2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'b2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'c2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'd2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'e2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'f2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'g2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'h2', model: pawnW},
+			];
+		} else if (mode === 'black') {
+			pieces = [
+				{type: 'r', color: 'b', initialSquare: 'a8', model: rookB},
+				{type: 'n', color: 'b', initialSquare: 'b8', model: knightB},
+				{type: 'b', color: 'b', initialSquare: 'c8', model: bishopB},
+				{type: 'q', color: 'b', initialSquare: 'd8', model: queenB},
+				{type: 'k', color: 'b', initialSquare: 'e8', model: kingB},
+				{type: 'b', color: 'b', initialSquare: 'f8', model: bishopB},
+				{type: 'n', color: 'b', initialSquare: 'g8', model: knightB},
+				{type: 'r', color: 'b', initialSquare: 'h8', model: rookB},
+				{type: 'p', color: 'b', initialSquare: 'a7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'b7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'c7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'd7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'e7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'f7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'g7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'h7', model: pawnB},
+			];
+		} else if (mode === 'all') {
+			pieces = [
+				{type: 'r', color: 'w', initialSquare: 'a1', model: rookW},
+				{type: 'n', color: 'w', initialSquare: 'b1', model: knightW},
+				{type: 'b', color: 'w', initialSquare: 'c1', model: bishopW},
+				{type: 'q', color: 'w', initialSquare: 'd1', model: queenW},
+				{type: 'k', color: 'w', initialSquare: 'e1', model: kingW},
+				{type: 'b', color: 'w', initialSquare: 'f1', model: bishopW},
+				{type: 'n', color: 'w', initialSquare: 'g1', model: knightW},
+				{type: 'r', color: 'w', initialSquare: 'h1', model: rookW},
+				{type: 'p', color: 'w', initialSquare: 'a2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'b2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'c2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'd2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'e2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'f2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'g2', model: pawnW},
+				{type: 'p', color: 'w', initialSquare: 'h2', model: pawnW},
+				{type: 'r', color: 'b', initialSquare: 'a8', model: rookB},
+				{type: 'n', color: 'b', initialSquare: 'b8', model: knightB},
+				{type: 'b', color: 'b', initialSquare: 'c8', model: bishopB},
+				{type: 'q', color: 'b', initialSquare: 'd8', model: queenB},
+				{type: 'k', color: 'b', initialSquare: 'e8', model: kingB},
+				{type: 'b', color: 'b', initialSquare: 'f8', model: bishopB},
+				{type: 'n', color: 'b', initialSquare: 'g8', model: knightB},
+				{type: 'r', color: 'b', initialSquare: 'h8', model: rookB},
+				{type: 'p', color: 'b', initialSquare: 'a7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'b7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'c7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'd7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'e7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'f7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'g7', model: pawnB},
+				{type: 'p', color: 'b', initialSquare: 'h7', model: pawnB},
+			];
+		} else {
+			return false;
+		}
 		pieces.forEach(piece => {
-			const src = getAbsoluteHref(location.href, piece.model)
-			const {
-				entity,
-				orientation
-			} = addMedia(
-				src,
-				'#interactable-media',
-				contentOrigin,
-				null,
-				!(src instanceof MediaStream),
-				false,
-				true, {},
-				true,
-				this.el
-			)
-			let pieceScale = this.data.squareSize / this.data.scaleDefault;
-			entity.setAttribute('scale', `${pieceScale} ${pieceScale} ${pieceScale}`);
-			const file = piece.initialSquare.substr(0,1);
-			const rank = piece.initialSquare.substr(1,1);
-			const pieceX = this.getPositionFromFile(file);
-			const pieceZ = this.getPositionFromRank(rank);
-			entity.pieceData = {
-				color: piece.color,
-				type: piece.type,
-				initialSquare: piece.initialSquare,
-				lastSquare: piece.initialSquare,
-				lastPosition: entity.getAttribute('position'),
-				currentPosition: entity.getAttribute('position'),
-				moves: [],
-				wasHeld: false,
-				pieceY: this.el.pieceY + this.yCorrections[piece.type]
-			};
-			const initialPosition = `${pieceX} ${entity.pieceData.pieceY} ${pieceZ}`;
-			entity.setAttribute('position', initialPosition);
-			this.resetPieceRotation(entity);
-			entity.setAttribute('listed-media', '', true);
-			entity.removeAttribute('listed-media');
-			entity.setAttribute('scalable-when-grabbed', '', true);
-			entity.removeAttribute('scalable-when-grabbed');
-			entity.setAttribute('hoverable-visuals', '', true);
-			entity.removeAttribute('hoverable-visuals');
-			setTimeout(() => {
-				// Temporary hack to remove pin/delete/etc menu
-				entity.firstChild.setAttribute('visible', 'false');
-			}, 5000);
-			this.pieceEls.push(entity);
+			this.buildPiece(piece)
 		});
 		this.cursor = document.createElement('a-sphere');
 		this.cursor.setAttribute('radius', this.data.squareSize / 8);
 		this.el.appendChild(this.cursor);
+	},
+	buildPiece(piece) {
+		const contentOrigin = 1;
+		const src = getAbsoluteHref(location.href, piece.model)
+		const {
+			entity,
+			orientation
+		} = addMedia(
+			src,
+			'#interactable-media',
+			contentOrigin,
+			null,
+			!(src instanceof MediaStream),
+			false,
+			true, {},
+			true,
+			this.el
+		)
+		let pieceScale = this.data.squareSize / this.data.scaleDefault;
+		entity.setAttribute('scale', `${pieceScale} ${pieceScale} ${pieceScale}`);
+		const file = (piece.hasOwnProperty('sendTo')) ? piece.sendTo.substr(0, 1) : piece.initialSquare.substr(0, 1);
+		const rank = (piece.hasOwnProperty('sendTo')) ? piece.sendTo.substr(1, 1) : piece.initialSquare.substr(1, 1);
+		const pieceX = this.getPositionFromFile(file);
+		const pieceZ = this.getPositionFromRank(rank);
+		entity.pieceData = {
+			color: piece.color,
+			type: piece.type,
+			initialSquare: piece.initialSquare,
+			lastSquare: (piece.hasOwnProperty('sendTo')) ? piece.sendTo : piece.initialSquare,
+			lastPosition: entity.getAttribute('position'),
+			currentPosition: entity.getAttribute('position'),
+			moves: [],
+			wasHeld: false,
+			pieceY: this.el.pieceY + this.yCorrections[piece.type]
+		};
+		const initialPosition = `${pieceX} ${entity.pieceData.pieceY} ${pieceZ}`;
+		entity.setAttribute('position', initialPosition);
+		this.resetPieceRotation(entity);
+		entity.setAttribute('listed-media', '', true);
+		entity.removeAttribute('listed-media');
+		entity.setAttribute('scalable-when-grabbed', '', true);
+		entity.removeAttribute('scalable-when-grabbed');
+		entity.setAttribute('hoverable-visuals', '', true);
+		entity.removeAttribute('hoverable-visuals');
+		this.pieceEls.push(entity);
+		setTimeout(() => {
+			// Temporary hack to remove pin/clone/delete/etc freeze menu
+			entity.firstChild.setAttribute('visible', 'false');
+		}, 5000);
+		setTimeout(() => {
+			const newPiece = {color: entity.pieceData.color, id: entity.id, type: entity.pieceData.type, initialSquare: entity.pieceData.initialSquare, lastSquare: entity.pieceData.lastSquare};
+			this.el.sceneEl.emit('addPiece', newPiece)
+			NAF.connection.broadcastData('addPiece', newPiece);
+		});
 	},
 	isOnBoard(piece) {
 		const position = piece.getAttribute('position');
@@ -418,40 +612,15 @@ window.AFRAME.registerComponent('chess-board', {
 				currentY !== piece.pieceData.lastPosition.y ||
 				destinationZ !== piece.pieceData.lastPosition.z;
 			if (isPositionChanged) {
-				const move = this.el.chess.move({from: piece.pieceData.lastSquare, to: destinationSquare.square});
-				if (move) {
-					const isCapture = move.flags.indexOf('c') !== -1;
-					const isQueensideCastle = move.flags.indexOf('q') !== -1;
-					const isKingsideCastle = move.flags.indexOf('k') !== -1;
-					const isEnPassant = move.flags.indexOf('e') !== -1;
-					const isPromotion = move.flags.indexOf('p') !== -1;
-					if (isCapture) {
-						const capturedPiece = this.getPieceFromSquare(move.to);
-						this.pieceCaptured(capturedPiece);
-					}
-					if (isQueensideCastle) {
-						const fromSquare = (move.color === 'b') ? 'a8' : 'a1';
-						const toSquare = (move.color === 'b') ? 'd8' : 'd1';
-						const rook = this.getPieceFromSquare(fromSquare);
-						this.moveTo(rook, toSquare);
-					}
-					if (isKingsideCastle) {
-						const fromSquare = (move.color === 'b') ? 'h8' : 'h1';
-						const toSquare = (move.color === 'b') ? 'f8' : 'f1';
-						const rook = this.getPieceFromSquare(fromSquare);
-						this.moveTo(rook, toSquare);
-					}
-					if (isEnPassant) {
-						const fromRank = move.from.substr(1, 1);
-						const toFile = move.to.substr(0, 1);
-						const capturedPawn = this.getPieceFromSquare(`${toFile}${fromRank}`);
-						this.pieceCaptured(capturedPawn);
-					}
-					if (isPromotion) {
-						// TODO
-					}
+				const moveDetails = {from: piece.pieceData.lastSquare, to: destinationSquare.square};
+				if (piece.pieceData.type = 'p' && (destinationSquare.rank === '8' || destinationSquare.rank === '1')) {
+					moveDetails.promotion = 'q';
 				}
-
+				const move = this.el.chess.move(moveDetails);
+				if (move) {
+					NAF.connection.broadcastData('sync-move', moveDetails);
+					this.doMove(move);
+				}
 				if (!move || piece.pieceData.lastSquare === destinationSquare.square) {
 					this.onPieceGoBack(piece);
 				} else if (move) {
@@ -462,15 +631,69 @@ window.AFRAME.registerComponent('chess-board', {
 			}
 		}
 	},
-	pieceCaptured(piece) {
-		const currentPosition = piece.getAttribute('position');
-		const newPosition = `${currentPosition.x} ${this.el.pieceY * 2.5} ${currentPosition.z}`;
-		piece.setAttribute('position', newPosition);
-		piece.setAttribute('visible', 'false');
-		piece.pieceData.lastSquare = '';
+	doMove(move) {
+		const isCapture = move.flags.indexOf('c') !== -1;
+		const isQueensideCastle = move.flags.indexOf('q') !== -1;
+		const isKingsideCastle = move.flags.indexOf('k') !== -1;
+		const isEnPassant = move.flags.indexOf('e') !== -1;
+		const isPromotion = move.flags.indexOf('p') !== -1;
+		if (isCapture) {
+			this.squareCaptured(move.to);
+		}
+		if (isQueensideCastle) {
+			const fromSquare = (move.color === 'b') ? 'a8' : 'a1';
+			const toSquare = (move.color === 'b') ? 'd8' : 'd1';
+			const rook = this.getPieceFromSquare(fromSquare);
+			this.moveTo(rook, toSquare);
+		}
+		if (isKingsideCastle) {
+			const fromSquare = (move.color === 'b') ? 'h8' : 'h1';
+			const toSquare = (move.color === 'b') ? 'f8' : 'f1';
+			const rook = this.getPieceFromSquare(fromSquare);
+			this.moveTo(rook, toSquare);
+		}
+		if (isEnPassant) {
+			const fromRank = move.from.substr(1, 1);
+			const toFile = move.to.substr(0, 1);
+			this.squareCaptured(`${toFile}${fromRank}`);
+		}
+		if (isPromotion) {
+			// TODO
+			// const square = (isCapture) ? move.from : move.to;
+			const square = move.to;
+			setTimeout(() => {
+				this.squarePromoted(square);
+			}, 750);
+		}
+	},
+	squarePromoted(square) {
+		const oldPiece = this.getPieceFromSquare(square);
+		const color = oldPiece.pieceData.color;
+		const initialSquare = oldPiece.pieceData.initialSquare;
+		window.NAF.connection.broadcastData('removePiece', { id: oldPiece.id, color });
+		this.el.sceneEl.emit('removePiece', { id: oldPiece.id, color });
+		oldPiece.parentNode.removeChild(oldPiece);
+		const newPiece = {
+			type: 'q', 
+			color, 
+			initialSquare, 
+			model: (color === 'w') ? queenW : queenB, 
+			sendTo: square
+		};
+		this.buildPiece(newPiece);
+	},
+	squareCaptured(square) {
+		NAF.connection.sendData(this.state.opponentId, 'capture-piece', {square});
 	},
 	getPieceFromSquare(square) {
-		const piece = this.pieceEls.filter(p => p.pieceData.lastSquare === square)[0];
+		const whitePieces = this.state.players.white.pieces.map(p => { p.color = 'w'; return p; });
+		const blackPieces = this.state.players.black.pieces.map(p => { p.color = 'b'; return p; });
+		const allPieces = whitePieces.concat(blackPieces);
+		const pieceMeta = allPieces.filter(p => p.lastSquare === square)[0];
+		const piece = document.querySelector(`#${pieceMeta.id}`);
+		if (!piece.pieceData) {
+			piece.pieceData = { color: pieceMeta.color};
+		}
 		return piece;
 	},
 	interactionHandler(piece) {
@@ -516,6 +739,9 @@ window.AFRAME.registerComponent('chess-board', {
 		this.resetPieceRotation(piece);
 		piece.pieceData.lastPosition = position;
 		piece.pieceData.lastSquare = `${file}${rank}`;
+		const updateData = { id: piece.id, lastSquare: piece.pieceData.lastSquare, color: piece.pieceData.color };
+		this.el.sceneEl.emit('updatePiece', updateData);
+		NAF.connection.broadcastData('updatePiece', updateData);
 		this.populateMoves(piece);
 		if (this.data.preventThrowing) {
 			piece.setAttribute('body-helper', '');

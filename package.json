@@ -55,6 +55,7 @@
     "aframe": "github:mozillareality/aframe#hubs/master",
     "aframe-rounded": "^1.0.3",
     "aframe-slice9-component": "^1.0.0",
+    "aframe-state-component": "^7.1.0",
     "ammo-debug-drawer": "github:infinitelee/ammo-debug-drawer",
     "ammo.js": "github:mozillareality/ammo.js#hubs/master",
     "animejs": "github:mozillareality/anime#hubs/master",
