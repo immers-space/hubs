@@ -152,6 +152,8 @@ window.AFRAME.registerComponent('chess-board', {
 		if (piece) {
 			piece.setAttribute('listed-media', '', true);
 			piece.removeAttribute('listed-media');
+			piece.setAttribute('is-remote-hover-target', '', true);
+			piece.removeAttribute('is-remote-hover-target');
 			piece.classList.remove('interactable');
 		} else if (pieceData.retryCount < 5) {
 			setTimeout(() => {
@@ -389,7 +391,8 @@ window.AFRAME.registerComponent('chess-board', {
 			null,
 			!(src instanceof MediaStream),
 			false,
-			true, {},
+			true, 
+			{},
 			true,
 			this.el
 		)
