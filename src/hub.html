@@ -80,8 +80,10 @@
                 </a-entity>
             </template>
             <template id="remote-avatar">
-                <a-entity networked-avatar ik-root player-info matrix-auto-update visible="false">
-                    <a-entity class="camera" matrix-auto-update></a-entity>
+                <a-entity tags="inspectable: true; preventAudioBoost: true" inspect-pivot-child-selector="selector:.inspect-pivot" networked-avatar ik-root player-info matrix-auto-update visible="false">
+                    <a-entity class="camera" matrix-auto-update>
+                        <a-entity class="inspect-pivot" inspect-pivot-offset-from-camera></a-entity>
+                    </a-entity>
 
                     <a-entity class="left-controller" matrix-auto-update></a-entity>
 
@@ -110,10 +112,9 @@
                         </template>
 
                         <template data-name="Spine">
-                            <a-entity is-remote-hover-target personal-space-invader="radius: 0.2; useMaterial: true;"
-                                bone-visibility>
-                                <a-entity class="chest-image" scale="0.18 0.18 0.18" position="0 -0.025 0.13">
-                                </a-entity>
+                            <a-entity is-remote-hover-target personal-space-invader="radius: 0.2; useMaterial: true;" bone-visibility>
+                                <a-entity class="avatar-inspect-collider" avatar-inspect-collider tags="togglesHoveredActionSet: true;" is-remote-hover-target inspect-button></a-entity>
+                                <a-entity class="chest-image" scale="0.18 0.18 0.18" position="0 -0.025 0.13"></a-entity>
                                 <a-entity class="interactable ui interactable-ui">
                                     <a-entity billboard class="freeze-menu"
                                         visibility-while-frozen="withinDistance: 100; requireHoverOnNonMobile: false;"
@@ -316,10 +317,16 @@
                                 <a-entity sprite icon-button="image: focus-action.png; hoverImage: focus-action.png"
                                     scale="0.165 0.165 0.165" position="0 0 0.001"></a-entity>
                             </a-entity>
-                            <a-entity class="deserialize-drawing" visible="false" mixin="rounded-button"
-                                is-remote-hover-target tags="singleActionButton: true;" deserialize-drawing-button
-                                position="0.250 -0.625 0.001">
-                                <a-entity sprite
+                            <a-entity
+                                class="deserialize-drawing"
+                                visible="false"
+                                mixin="rounded-button"
+                                is-remote-hover-target
+                                tags="singleActionButton: true;"
+                                deserialize-drawing-button
+                                position="-0.3 -0.625 0.001">
+                                <a-entity
+                                    sprite
                                     icon-button="image: deserialize-action.png; hoverImage: deserialize-action.png"
                                     scale="0.165 0.165 0.165" position="0 0 0.001"></a-entity>
                             </a-entity>
@@ -417,6 +424,17 @@
                     </a-entity>
                 </a-entity>
             </template>
+
+            <template id="interactable-media-frame">
+                <!--
+                    note we intentionally don't setup the shape or media-frame here since they both don't support dynamic updates
+                    and so must be configured when creating the entity on each client. Since we only support media frames in scenes
+                    for now, this is acceptable, but TODO this will need to be handled if we want to dynamically spawn them.
+                -->
+                <a-entity body-helper="type: kinematic; collisionFilterGroup: 16; collisionFilterMask: 1; disableCollision: true;" >
+                </a-entity>
+            </template>
+
 
             <template id="linked-media">
                 <a-entity class="interactable"
@@ -789,9 +807,23 @@
         </a-sphere>
 
         <!-- Avatar Rig -->
-        <a-entity id="avatar-rig" ik-root player-info set-yxz-order periodic-full-syncs visible="false">
-            <a-entity id="player-hud" hud-controller="head: #viewing-camera;" vr-mode-toggle-class="class: ui"
-                vr-mode-toggle-visibility vr-mode-toggle-playing__hud-controller>
+        <a-entity
+            id="avatar-rig"
+            ik-root
+            player-info
+            set-yxz-order
+            periodic-full-syncs
+            visible="false"
+            tags="inspectable: true; preventAudioBoost: true"
+            inspect-pivot-child-selector="selector:.inspect-pivot"
+        >
+            <a-entity
+                id="player-hud"
+                hud-controller="head: #viewing-camera;"
+                vr-mode-toggle-class="class: ui"
+                vr-mode-toggle-visibility
+                vr-mode-toggle-playing__hud-controller
+            >
                 <a-entity visibility-while-frozen="requireHoverOnNonMobile: false;" rotation="30 0 0">
                     <a-entity class="leave-btn" position="0 0 0" scale="0.7 0.7 0.7" leave-room-button
                         is-remote-hover-target tags="singleActionButton: true;">
@@ -861,11 +893,21 @@
                 </a-entity>
             </a-entity>
 
-            <a-entity id="avatar-pov-node" class="camera" personal-space-bubble="radius: 0.4;" rotation
-                pitch-yaw-rotator set-yxz-order position="0 1.6 0">
-                <a-entity id="gaze-teleport" position="0.15 0 0"
-                    teleporter="start: /actions/startTeleport; confirm: /actions/stopTeleport; collisionEntities: [nav-mesh];">
-                </a-entity>
+            <a-entity
+                id="avatar-pov-node"
+                class="camera"
+                personal-space-bubble="radius: 0.4;"
+                rotation
+                pitch-yaw-rotator
+                set-yxz-order
+                position="0 1.6 0"
+            >
+                <a-entity class="inspect-pivot" inspect-pivot-offset-from-camera></a-entity>
+                <a-entity
+                    id="gaze-teleport"
+                    position = "0.15 0 0"
+                    teleporter="start: /actions/startTeleport; confirm: /actions/stopTeleport; collisionEntities: [nav-mesh];"
+                ></a-entity>
                 <a-entity id="stats" stats-plus="false" position="0 0 -1"></a-entity>
             </a-entity>
 
