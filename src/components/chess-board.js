@@ -5,6 +5,7 @@ import {
 import {
 	getAbsoluteHref
 } from '../utils/media-url-utils';
+import { setTag } from "../components/tags";
 import rookB from '../assets/models/chess/black_rook.glb';
 import knightB from '../assets/models/chess/black_knight.glb';
 import bishopB from '../assets/models/chess/black_bishop.glb';
@@ -46,6 +47,9 @@ window.AFRAME.registerComponent('chess-board', {
 			default: false
 		},
 		teleportPlayers: {
+			default: false
+		},
+		hideBoard: {
 			default: false
 		}
 	},
@@ -152,8 +156,28 @@ window.AFRAME.registerComponent('chess-board', {
 		if (piece) {
 			piece.setAttribute('listed-media', '', true);
 			piece.removeAttribute('listed-media');
+			piece.setAttribute('floaty-object', '', true);
+			piece.removeAttribute('floaty-object');
+			piece.setAttribute('set-unowned-body-kinematic', '', true);
+			piece.removeAttribute('set-unowned-body-kinematic');
 			piece.setAttribute('is-remote-hover-target', '', true);
 			piece.removeAttribute('is-remote-hover-target');
+			piece.setAttribute('is-not-remote-hover-target', '');
+			piece.setAttribute('matrix-auto-update', '', true);
+			piece.removeAttribute('matrix-auto-update');
+			piece.setAttribute('scalable-when-grabbed', '', true);
+			piece.removeAttribute('scalable-when-grabbed');
+			piece.setAttribute('hoverable-visuals', '', true);
+			piece.removeAttribute('hoverable-visuals');
+			piece.setAttribute('body-helper', 'type: kinematic; mass: 1000; collisionFilterGroup: 0; collisionFilterMask: 0; disableCollision: true; emitCollisionEvents: false; linearDamping: 1; angularDamping: 1;');
+			// const tags = piece.getAttribute('tags');
+			// tags.isHandCollisionTarget = false;
+			// tags.isHoldable = false;
+			// // delete tags.isHandCollisionTarget;
+			// // delete tags.isHoldable;
+			// piece.setAttribute('tags', tags);
+			setTag(piece, 'isHandCollisionTarget', false);
+			setTag(piece, 'isHoldable', false);
 			piece.classList.remove('interactable');
 		} else if (pieceData.retryCount < 5) {
 			setTimeout(() => {
@@ -280,6 +304,8 @@ window.AFRAME.registerComponent('chess-board', {
 			box.setAttribute('depth', this.data.squareSize);
 			if (this.data.wireframeBoard) {
 				box.setAttribute('wireframe', 'true');
+			} else if (this.data.hideBoard) {
+				box.setAttribute('material', 'transparent: true; opacity: 0;');
 			} else if (altColor) {
 				box.setAttribute('color', (i % 2 === 0) ? 'black' : 'white');
 			} else {
@@ -703,6 +729,9 @@ window.AFRAME.registerComponent('chess-board', {
 		const interaction = AFRAME.scenes[0].systems.interaction;
 		const isHeld = interaction && interaction.isHeld(piece);
 		if (isHeld) {
+			if (!this.state.imPlaying) {
+				this.onPieceGoBack(piece)
+			}
 			this.onPieceHeld(piece);
 		} else if (piece.pieceData.wasHeld) {
 			if (this.isOnBoard(piece) === false) {
