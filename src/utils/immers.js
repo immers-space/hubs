@@ -18,15 +18,18 @@ let hubScene;
 let localPlayer;
 
 export function getAvatarFromActor(actorObj) {
-  if (!actorObj.attachment) {
+  if (!actorObj.avatar) {
     return null;
   }
-  const attachments = Array.isArray(actorObj.attachment) ? actorObj.attachment : [actorObj.attachment];
-  const avi = attachments.find(obj => obj.type === "Avatar");
-  if (avi) {
-    return avi.url;
+  const avatar = Array.isArray(actorObj.avatar) ? actorObj.avatar[0] : actorObj.avatar;
+  const links = Array.isArray(avatar.url) ? avatar.url : [avatar.url];
+  // prefer gltf
+  const gltfUrl = links.find(link => link.mediaType === "model/gltf+json" || link.mediaType === "model/gltf-binary");
+  if (gltfUrl) {
+    return gltfUrl.href;
   }
-  return null;
+  // gamble on a url of unkown type
+  return links.find(link => typeof link === "string");
 }
 
 export async function getObject(IRI) {
@@ -105,6 +108,48 @@ export function leave(actorObj) {
     target: place,
     to: actorObj.followers
   });
+}
+
+// Adds a new avatar to an immerser's inventory
+export async function createAvatar(actorObj, hubsAvatarId) {
+  const hubsAvatar = await fetchAvatar(hubsAvatarId);
+  const immersAvatar = {
+    type: "Model",
+    name: hubsAvatar.name,
+    url: {
+      type: "Link",
+      href: hubsAvatar.gltf_url,
+      mediaType: hubsAvatar.gltf_url.includes(".glb") ? "model/gltf-binary" : "model/gltf+json"
+    },
+    to: actorObj.followers
+  };
+  if (hubsAvatar.files.thumbnail) {
+    immersAvatar.icon = hubsAvatar.files.thumbnail;
+  }
+  if (hubsAvatar.attributions) {
+    immersAvatar.attributedTo = Object.values(hubsAvatar.attributions).map(name => ({
+      name,
+      type: "Person"
+    }));
+  }
+  const createResult = await postActivity(actorObj.outbox, immersAvatar);
+  if (!createResult.ok) {
+    throw new Error("Error creating avatar", createResult.status, createResult.body);
+  }
+  const created = await getObject(createResult.headers.get("Location"));
+  if (actorObj.streams?.avatars) {
+    const addResult = await postActivity(actorObj.outbox, {
+      type: "Add",
+      actor: actorObj.id,
+      to: actorObj.followers,
+      object: created.id,
+      target: actorObj.streams.avatars
+    });
+    if (!addResult.ok) {
+      throw new Error("Error adding avatar to collection", addResult.status, addResult.body);
+    }
+  }
+  return created;
 }
 
 export async function getFriends(actorObj) {
@@ -261,16 +306,12 @@ export async function initialize(store, scene, remountUI) {
 
   scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
-    const avatar = await fetchAvatar(profile.avatarId);
-    updateProfile(profile, {
+    // const avatar = await fetchAvatar(profile.avatarId);
+    const created = await createAvatar(actorObj, profile.avatarId);
+    updateProfile(actorObj, {
       name: profile.displayName,
-      attachment: [
-        {
-          type: "Avatar",
-          content: profile.avatarId,
-          url: avatar.gltf_url
-        }
-      ]
+      avatar: created.object,
+      icon: created.object.icon
     })
       .then(() => {
         store.update({
