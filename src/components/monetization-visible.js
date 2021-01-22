@@ -38,7 +38,7 @@ AFRAME.registerSystem("monetization-visible", {
     const mv = "monetization-visible";
     for (const record of records) {
       for (const node of record.addedNodes) {
-        if (!node.nodeType === document.ELEMENT_NODE) continue;
+        if (!(node.nodeType === document.ELEMENT_NODE)) continue;
         if (node.classList.contains(mv)) node.setAttribute(mv, {});
         for (const descendant of node.querySelectorAll(`.${mv}`)) {
           descendant.setAttribute(mv, {});
