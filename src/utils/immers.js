@@ -39,7 +39,7 @@ export function getAvatarFromActor(actorObj) {
     return null;
   }
   const avatar = Array.isArray(actorObj.avatar) ? actorObj.avatar[0] : actorObj.avatar;
-  getUrlFromAvatar(avatar);
+  return getUrlFromAvatar(avatar);
 }
 
 export async function getObject(IRI) {
