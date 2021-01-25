@@ -198,7 +198,7 @@ class MediaTiles extends Component {
           {thumbnailElement}
         </a>
         <div className={styles.tileActions}>
-          {entry.type === "avatar" && (
+          {/*disabled*/ entry.type === "__avatar" && (
             <StateLink
               stateKey="overlay"
               stateValue="avatar-editor"

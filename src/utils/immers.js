@@ -3,7 +3,8 @@ import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.3.0");
+console.log("immers.space client v0.4.0");
+const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
 let rejectAuth;
@@ -16,22 +17,34 @@ let place;
 let token;
 let hubScene;
 let localPlayer;
+let actorObj;
+let avatarsCollection;
+// map of avatar urls to model objects to avoid recreating their AP representation
+// when donned from personal avatars collection
+const myAvatars = {};
+
+export function getUrlFromAvatar(avatar) {
+  const links = Array.isArray(avatar.url) ? avatar.url : [avatar.url];
+  // prefer gltf
+  const gltfUrl = links.find(link => link.mediaType === "model/gltf+json" || link.mediaType === "model/gltf-binary");
+  if (gltfUrl) {
+    return gltfUrl.href;
+  }
+  // gamble on a url of unkown type
+  return links.find(link => typeof link === "string");
+}
 
 export function getAvatarFromActor(actorObj) {
-  if (!actorObj.attachment) {
+  if (!actorObj.avatar) {
     return null;
   }
-  const attachments = Array.isArray(actorObj.attachment) ? actorObj.attachment : [actorObj.attachment];
-  const avi = attachments.find(obj => obj.type === "Avatar");
-  if (avi) {
-    return avi.url;
-  }
-  return null;
+  const avatar = Array.isArray(actorObj.avatar) ? actorObj.avatar[0] : actorObj.avatar;
+  return getUrlFromAvatar(avatar);
 }
 
 export async function getObject(IRI) {
   if (IRI.startsWith(localImmer) || IRI.startsWith(homeImmer)) {
-    const headers = { Accept: "application/activity+json" };
+    const headers = { Accept: jsonldMime };
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -48,7 +61,7 @@ export async function getObject(IRI) {
 export async function getActor() {
   const response = await window.fetch(`${homeImmer}/auth/me`, {
     headers: {
-      Accept: "application/activity+json",
+      Accept: jsonldMime,
       Authorization: `Bearer ${token}`
     }
   });
@@ -62,7 +75,7 @@ export function postActivity(outbox, activity) {
   return window.fetch(outbox, {
     method: "POST",
     headers: {
-      "Content-Type": "application/activity+json",
+      "Content-Type": jsonldMime,
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(activity)
@@ -107,10 +120,112 @@ export function leave(actorObj) {
   });
 }
 
+// Adds a new avatar to an immerser's inventory
+export async function createAvatar(actorObj, hubsAvatarId) {
+  const hubsAvatar = await fetchAvatar(hubsAvatarId);
+  const immersAvatar = {
+    type: "Model",
+    name: hubsAvatar.name,
+    url: {
+      type: "Link",
+      href: hubsAvatar.gltf_url,
+      mediaType: hubsAvatar.gltf_url.includes(".glb") ? "model/gltf-binary" : "model/gltf+json"
+    },
+    to: actorObj.followers,
+    generator: place.id
+  };
+  if (hubsAvatar.files.thumbnail) {
+    immersAvatar.icon = hubsAvatar.files.thumbnail;
+  }
+  if (hubsAvatar.attributions) {
+    immersAvatar.attributedTo = Object.values(hubsAvatar.attributions).map(name => ({
+      name,
+      type: "Person"
+    }));
+  }
+  const createResult = await postActivity(actorObj.outbox, immersAvatar);
+  if (!createResult.ok) {
+    throw new Error("Error creating avatar", createResult.status, createResult.body);
+  }
+  const created = await getObject(createResult.headers.get("Location"));
+  if (actorObj.streams?.avatars) {
+    const addResult = await postActivity(actorObj.outbox, {
+      type: "Add",
+      actor: actorObj.id,
+      to: actorObj.followers,
+      object: created.id,
+      target: actorObj.streams.avatars
+    });
+    if (!addResult.ok) {
+      throw new Error("Error adding avatar to collection", addResult.status, addResult.body);
+    }
+  }
+  return created;
+}
+
+export async function fetchMyImmersAvatars(page) {
+  let collectionPage;
+  let items;
+  const hubsResult = {
+    meta: {
+      source: "avatar",
+      next_cursor: null
+    },
+    entries: [],
+    suggestions: null
+  };
+  if (!actorObj.streams?.avatars) {
+    return hubsResult;
+  }
+  try {
+    if (!avatarsCollection) {
+      // cache base collection object
+      avatarsCollection = await getObject(actorObj.streams.avatars);
+    }
+    // check if the collection is not paginated
+    items = avatarsCollection.orderedItems;
+    if (!items && avatarsCollection.first) {
+      // otherwise get page
+      collectionPage = await getObject(page || avatarsCollection.first);
+      items = collectionPage.orderedItems;
+      hubsResult.meta.next_cursor = collectionPage.next;
+    }
+    items.forEach(createActivity => {
+      const avatar = createActivity.object;
+      const avatarGltfUrl = getUrlFromAvatar(avatar);
+      // cache results for lookup by url when donned
+      myAvatars[avatarGltfUrl] = avatar;
+      // form object for Hubs MediaBrowser
+      let preview = Array.isArray(avatar.icon) ? avatar.icon[0] : avatar.icon;
+      // if link/image object instead of direct link
+      if (typeof preview === "object") {
+        preview = preview.href || preview.url;
+      }
+      hubsResult.entries.push({
+        type: "avatar",
+        name: avatar.name,
+        // id used by hubs to set the avatar, put model url here
+        id: avatarGltfUrl,
+        images: {
+          preview: {
+            // width/height ignored for avatar media
+            url: preview
+          }
+        },
+        // the url displayed on hover is the immers link
+        url: avatar.id
+      });
+    });
+  } catch (err) {
+    console.error("Cannot fetch avatar collection", err);
+  }
+  return hubsResult;
+}
+
 export async function getFriends(actorObj) {
   const response = await window.fetch(`${actorObj.id}/friends`, {
     headers: {
-      Accept: "application/activity+json",
+      Accept: jsonldMime,
       Authorization: `Bearer ${token}`
     }
   });
@@ -191,7 +306,7 @@ export async function initialize(store, scene, remountUI) {
   hubScene = scene;
   localPlayer = document.getElementById("avatar-rig");
   // immers profile
-  const actorObj = await authPromise;
+  actorObj = await authPromise;
   const initialAvi = store.state.profile.avatarId;
   store.update({
     profile: {
@@ -261,16 +376,12 @@ export async function initialize(store, scene, remountUI) {
 
   scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
-    const avatar = await fetchAvatar(profile.avatarId);
-    updateProfile(profile, {
+    // const avatar = await fetchAvatar(profile.avatarId);
+    const avatar = myAvatars[profile.avatarId] || (await createAvatar(actorObj, profile.avatarId)).object;
+    updateProfile(actorObj, {
       name: profile.displayName,
-      attachment: [
-        {
-          type: "Avatar",
-          content: profile.avatarId,
-          url: avatar.gltf_url
-        }
-      ]
+      avatar,
+      icon: avatar.icon
     })
       .then(() => {
         store.update({

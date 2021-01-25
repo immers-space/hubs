@@ -2,6 +2,7 @@ import { EventTarget } from "event-target-shim";
 import configs from "../utils/configs";
 import { getReticulumFetchUrl, fetchReticulumAuthenticated, hasReticulumServer } from "../utils/phoenix-utils";
 import { pushHistoryPath, sluglessPath, withSlug } from "../utils/history";
+import { fetchMyImmersAvatars } from "../utils/immers";
 
 const EMPTY_RESULT = { entries: [], meta: {} };
 
@@ -108,11 +109,16 @@ export default class MediaSearchStore extends EventTarget {
 
     this.isFetching = true;
     this.dispatchEvent(new CustomEvent("statechanged"));
-    const result = fetch ? await fetchReticulumAuthenticated(path) : EMPTY_RESULT;
+    let result = fetch ? await fetchReticulumAuthenticated(path) : EMPTY_RESULT;
+    // immers personal avatar collection
+    if (source === "avatars" && isMy) {
+      result = await fetchMyImmersAvatars(searchParams.get("cursor"));
+    }
 
     if (this.requestIndex != currentRequestIndex) return;
 
     this.result = result;
+
     this.nextCursor = this.result && this.result.meta && this.result.meta.next_cursor;
     this.lastFetchedUrl = url;
     this.isFetching = false;
