@@ -130,6 +130,85 @@ function registerNetworkSchemas() {
   });
 
   NAF.schemas.add({
+    template: "#interactable-game-media",
+    components: [
+      {
+        component: "position",
+        requiresNetworkUpdate: vectorRequiresUpdate(0.001)
+      },
+      {
+        component: "rotation",
+        requiresNetworkUpdate: vectorRequiresUpdate(0.5)
+      },
+      {
+        component: "scale",
+        requiresNetworkUpdate: vectorRequiresUpdate(0.001)
+      },
+      // TODO: Optimize checking mediaOptions with requiresNetworkUpdate.
+      "media-loader",
+      {
+        component: "media-video",
+        property: "time"
+      },
+      {
+        component: "media-video",
+        property: "videoPaused"
+      },
+      {
+        component: "media-pdf",
+        property: "index"
+      },
+      "pinnable"
+    ],
+    nonAuthorizedComponents: [
+      {
+        component: "media-video",
+        property: "time"
+      },
+      {
+        component: "media-video",
+        property: "videoPaused"
+      },
+      {
+        component: "media-pager",
+        property: "index"
+      }
+    ]
+  });
+
+  NAF.schemas.add({
+    template: "#static-game-avatar",
+    components: [
+      {
+        component: "position",
+        requiresNetworkUpdate: vectorRequiresUpdate(0.001)
+      },
+      {
+        component: "rotation",
+        requiresNetworkUpdate: vectorRequiresUpdate(0.5)
+      },
+      {
+        component: "scale",
+        requiresNetworkUpdate: vectorRequiresUpdate(0.001)
+      },
+    ],
+    nonAuthorizedComponents: [
+      {
+        component: "position",
+        requiresNetworkUpdate: vectorRequiresUpdate(0.001)
+      },
+      {
+        component: "rotation",
+        requiresNetworkUpdate: vectorRequiresUpdate(0.5)
+      },
+      {
+        component: "scale",
+        requiresNetworkUpdate: vectorRequiresUpdate(0.001)
+      },
+    ]
+  });
+
+  NAF.schemas.add({
     template: "#interactable-emoji",
     components: [
       {
