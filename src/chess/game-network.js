@@ -73,18 +73,21 @@ function setupNetwork(scene) {
         const piece = PositioningUtils.getPieceFromSquare(data.square);
         piece.parentNode.removeChild(piece);
         scene.emit("removePiece", { id: piece.id, color: piece.metadata.color });
-        window.NAF.connection.broadcastData("chess::remove-piece", { id: piece.id, color: piece.metadata.color });
+        window.NAF.connection.broadcastDataGuaranteed("chess::remove-piece", {
+          id: piece.id,
+          color: piece.metadata.color
+        });
       }
     });
   });
 }
 
 function broadcastData(key, value) {
-  window.NAF.connection.broadcastData(key, value);
+  window.NAF.connection.broadcastDataGuaranteed(key, value);
 }
 
 function sendData(to, key, value) {
-  window.NAF.connection.sendData(to, key, value);
+  window.NAF.connection.sendDataGuaranteed(to, key, value);
 }
 
 function getMyId() {
