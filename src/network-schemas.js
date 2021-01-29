@@ -190,7 +190,7 @@ function registerNetworkSchemas() {
       {
         component: "scale",
         requiresNetworkUpdate: vectorRequiresUpdate(0.001)
-      },
+      }
     ],
     nonAuthorizedComponents: [
       {
@@ -204,7 +204,7 @@ function registerNetworkSchemas() {
       {
         component: "scale",
         requiresNetworkUpdate: vectorRequiresUpdate(0.001)
-      },
+      }
     ]
   });
 

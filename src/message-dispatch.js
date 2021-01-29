@@ -150,10 +150,9 @@ export default class MessageDispatch {
           this.log(`Positional Audio ${shouldEnablePositionalAudio ? "enabled" : "disabled"}.`);
         }
         break;
-      case "chess": {
+      case "chess":
         this.scene.emit("chess-command", args);
-      }
-      break;
+        break;
     }
   };
 }
