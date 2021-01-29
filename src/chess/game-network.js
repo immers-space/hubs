@@ -1,9 +1,42 @@
 import * as PositioningUtils from "./positioning-utils";
-export { setupNetwork, broadcastData, sendData, getMyId };
+
+function setPieceClaimed(pieceData) {
+  // TODO: Retries may no longer be needed with new state system.
+  if (!pieceData.retryCount) {
+    pieceData.retryCount = 1;
+  }
+  const piece = document.querySelector(`#${pieceData.id}`);
+  if (piece) {
+    piece.setAttribute("listed-media", "", true);
+    piece.removeAttribute("listed-media");
+    piece.setAttribute("floaty-object", "", true);
+    piece.removeAttribute("floaty-object");
+    piece.setAttribute("set-unowned-body-kinematic", "", true);
+    piece.removeAttribute("set-unowned-body-kinematic");
+    piece.setAttribute("is-remote-hover-target", "", true);
+    piece.removeAttribute("is-remote-hover-target");
+    piece.setAttribute("is-not-remote-hover-target", "");
+    piece.setAttribute("matrix-auto-update", "", true);
+    piece.removeAttribute("matrix-auto-update");
+    piece.setAttribute("scalable-when-grabbed", "", true);
+    piece.removeAttribute("scalable-when-grabbed");
+    piece.setAttribute("hoverable-visuals", "", true);
+    piece.removeAttribute("hoverable-visuals");
+    piece.setAttribute(
+      "body-helper",
+      "type: kinematic; mass: 1000; collisionFilterGroup: 0; collisionFilterMask: 0; disableCollision: true; emitCollisionEvents: false; linearDamping: 1; angularDamping: 1;"
+    );
+    piece.classList.remove("interactable");
+  } else if (pieceData.retryCount < 5) {
+    setTimeout(() => {
+      pieceData.retryCount += 1;
+      setPieceClaimed(pieceData);
+    }, 1000);
+  }
+}
 
 function setupNetwork(scene) {
   const state = scene.systems.state.state;
-  const chessArbiter = scene.systems["chess-arbiter"];
   window.NAF.connection.onConnect(() => {
     // Networked State Broadcasts
     window.NAF.connection.subscribeToDataChannel("chess::set-player", (_, dataType, data) => {
@@ -58,37 +91,4 @@ function getMyId() {
   return window.NAF.clientId;
 }
 
-function setPieceClaimed(pieceData) {
-  // TODO: Retries may no longer be needed with new state system.
-  if (!pieceData.retryCount) {
-    pieceData.retryCount = 1;
-  }
-  let piece = document.querySelector(`#${pieceData.id}`);
-  if (piece) {
-    piece.setAttribute("listed-media", "", true);
-    piece.removeAttribute("listed-media");
-    piece.setAttribute("floaty-object", "", true);
-    piece.removeAttribute("floaty-object");
-    piece.setAttribute("set-unowned-body-kinematic", "", true);
-    piece.removeAttribute("set-unowned-body-kinematic");
-    piece.setAttribute("is-remote-hover-target", "", true);
-    piece.removeAttribute("is-remote-hover-target");
-    piece.setAttribute("is-not-remote-hover-target", "");
-    piece.setAttribute("matrix-auto-update", "", true);
-    piece.removeAttribute("matrix-auto-update");
-    piece.setAttribute("scalable-when-grabbed", "", true);
-    piece.removeAttribute("scalable-when-grabbed");
-    piece.setAttribute("hoverable-visuals", "", true);
-    piece.removeAttribute("hoverable-visuals");
-    piece.setAttribute(
-      "body-helper",
-      "type: kinematic; mass: 1000; collisionFilterGroup: 0; collisionFilterMask: 0; disableCollision: true; emitCollisionEvents: false; linearDamping: 1; angularDamping: 1;"
-    );
-    piece.classList.remove("interactable");
-  } else if (pieceData.retryCount < 5) {
-    setTimeout(() => {
-      pieceData.retryCount += 1;
-      setPieceClaimed(pieceData);
-    }, 1000);
-  }
-}
+export { setupNetwork, broadcastData, sendData, getMyId };

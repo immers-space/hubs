@@ -82,7 +82,7 @@ AFRAME.registerState({
         .indexOf(action.id);
       state.players[color].pieces.splice(removeIndex, 1);
     },
-    resetChessState: function(state, action) {
+    resetChessState: function(state) {
       state.imPlaying = false;
       state.myColor = null;
       state.opponentColor = null;
