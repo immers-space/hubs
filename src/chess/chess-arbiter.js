@@ -36,7 +36,7 @@ AFRAME.registerSystem("chess-arbiter", {
     const profile = window.APP.store.state.profile;
     switch (command) {
       case "play":
-        this.playAs(param, id, profile);
+          this.playAs(param, id, profile);
         break;
       case "reset":
         this.resetGame();
@@ -251,8 +251,8 @@ AFRAME.registerSystem("chess-arbiter", {
 
   snapPiece(piece) {
     const destinationSquare = PositioningUtils.getSquareFromPosition(piece.getAttribute("position"));
-    let destinationX = PositioningUtils.getPositionFromFile(destinationSquare.file);
-    let destinationZ = PositioningUtils.getPositionFromRank(destinationSquare.rank);
+    const destinationX = PositioningUtils.getPositionFromFile(destinationSquare.file);
+    const destinationZ = PositioningUtils.getPositionFromRank(destinationSquare.rank);
     if (destinationX !== null && destinationZ !== null) {
       const isMoved =
         destinationX !== piece.metadata.lastPosition.x ||

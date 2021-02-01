@@ -45,7 +45,7 @@ AFRAME.registerComponent("chess-piece", {
   buildPiece() {
     const contentOrigin = 1;
     const src = getAbsoluteHref(location.href, this.data.model);
-    const { entity, orientation } = addMedia(
+    const { entity } = addMedia(
       src,
       "#interactable-game-media",
       contentOrigin,
@@ -57,8 +57,7 @@ AFRAME.registerComponent("chess-piece", {
       true,
       this.el
     );
-
-    let pieceScale = this.squareSize / this.scaleDefault;
+    const pieceScale = this.squareSize / this.scaleDefault;
     entity.setAttribute("scale", `${pieceScale} ${pieceScale} ${pieceScale}`);
     const file = this.data.initialSquare.substr(0, 1);
     const rank = this.data.initialSquare.substr(1, 1);
