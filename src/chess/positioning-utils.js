@@ -1,4 +1,11 @@
-export { getRankFile, getPositionFromFile, getPositionFromRank, getSquareFromPosition, getPieceFromSquare, isOnBoard };
+function getHalfSquare() {
+  const scene = window.AFRAME.scenes[0];
+  const chessBoard = scene.querySelector("a-entity[chess-board]");
+  const squareSize = chessBoard.getAttribute("chess-board").squareSize;
+  const halfSquare = squareSize / 2;
+  return halfSquare;
+}
+
 function getRankFile(square) {
   let rank = null;
   let file = null;
@@ -79,17 +86,6 @@ function getPositionFromRank(rank) {
       break;
   }
   return destinationZ;
-}
-
-function getSquareFromPosition(position) {
-  const file = getFileFromPosition(position);
-  const rank = getRankFromPosition(position);
-  const square = `${file}${rank}`;
-  return {
-    square,
-    file,
-    rank
-  };
 }
 
 function getPieceFromSquare(square) {
@@ -174,10 +170,15 @@ function getFileFromPosition(position) {
   return file;
 }
 
-function getHalfSquare() {
-  const scene = window.AFRAME.scenes[0];
-  const chessBoard = scene.querySelector("a-entity[chess-board]");
-  const squareSize = chessBoard.getAttribute("chess-board").squareSize;
-  const halfSquare = squareSize / 2;
-  return halfSquare;
+function getSquareFromPosition(position) {
+  const file = getFileFromPosition(position);
+  const rank = getRankFromPosition(position);
+  const square = `${file}${rank}`;
+  return {
+    square,
+    file,
+    rank
+  };
 }
+
+export { getRankFile, getPositionFromFile, getPositionFromRank, getSquareFromPosition, getPieceFromSquare, isOnBoard };

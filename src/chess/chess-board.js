@@ -19,8 +19,8 @@ AFRAME.registerComponent("chess-board", {
     let offset = 0;
     const ranks = ["a", "b", "c", "d", "e", "f", "g", "h"];
     for (let i = 0, ranksLen = ranks.length; i < ranksLen; i++) {
-      let altColor = i % 2 !== 0;
-      let rank = this.buildRank(ranks[i], offset, altColor);
+      const altColor = i % 2 !== 0;
+      const rank = this.buildRank(ranks[i], offset, altColor);
       this.el.appendChild(rank);
       offset = offset + parseFloat(this.data.squareSize);
     }
