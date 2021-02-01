@@ -18,14 +18,12 @@ AFRAME.registerComponent("chess-piece", {
   },
 
   init() {
-    this.detectBoard();
+    this.detectGame();
     this.buildPiece();
-    this.el.fireResetRotation = () => {
-      this.resetPieceRotation(this.el);
-    };
+    this.el.setAttribute("networked", "template: #static-game-avatar");
   },
 
-  detectBoard() {
+  detectGame() {
     this.scene = this.el.sceneEl;
     this.chessGame = this.scene.querySelector("a-entity[chess-game]");
     this.squareSize = this.chessGame.getAttribute("chess-game").squareSize;
@@ -57,35 +55,35 @@ AFRAME.registerComponent("chess-piece", {
       true,
       {},
       true,
-      this.el.parentElement
+      this.el
     );
-    this.el = entity;
+
     let pieceScale = this.squareSize / this.scaleDefault;
-    this.el.setAttribute("scale", `${pieceScale} ${pieceScale} ${pieceScale}`);
+    entity.setAttribute("scale", `${pieceScale} ${pieceScale} ${pieceScale}`);
     const file = this.data.initialSquare.substr(0, 1);
     const rank = this.data.initialSquare.substr(1, 1);
     const pieceX = PositioningUtils.getPositionFromFile(file);
     const pieceZ = PositioningUtils.getPositionFromRank(rank);
-    this.data.lastPosition = this.el.getAttribute("position");
-    this.data.currentPosition = this.el.getAttribute("position");
+    this.data.lastPosition = entity.getAttribute("position");
+    this.data.currentPosition = entity.getAttribute("position");
     this.data.lastSquare = this.data.initialSquare;
     this.data.moves = [];
     this.data.wasHeld = false;
     this.data.pieceY = this.pieceY + this.yCorrections[this.data.type];
     const initialPosition = `${pieceX} ${this.data.pieceY} ${pieceZ}`;
-    this.el.setAttribute("position", initialPosition);
+    entity.setAttribute("position", initialPosition);
     this.resetPieceRotation(entity);
-    this.el.setAttribute("listed-media", "", true);
-    this.el.removeAttribute("listed-media");
-    this.el.setAttribute("scalable-when-grabbed", "", true);
-    this.el.removeAttribute("scalable-when-grabbed");
-    this.el.setAttribute("hoverable-visuals", "", true);
-    this.el.removeAttribute("hoverable-visuals");
-    this.el.metadata = this.data;
+    entity.setAttribute("listed-media", "", true);
+    entity.removeAttribute("listed-media");
+    entity.setAttribute("scalable-when-grabbed", "", true);
+    entity.removeAttribute("scalable-when-grabbed");
+    entity.setAttribute("hoverable-visuals", "", true);
+    entity.removeAttribute("hoverable-visuals");
+    entity.metadata = this.data;
     setTimeout(() => {
       const newPiece = {
         color: this.data.color,
-        id: this.el.id,
+        id: entity.id,
         type: this.data.type,
         initialSquare: this.data.initialSquare,
         lastSquare: this.data.lastSquare
@@ -93,6 +91,9 @@ AFRAME.registerComponent("chess-piece", {
       this.scene.emit("addPiece", newPiece);
       GameNetwork.broadcastData("chess::add-piece", newPiece);
     });
+    entity.fireResetRotation = () => {
+      this.resetPieceRotation(entity);
+    };
   },
 
   resetPieceRotation(piece) {

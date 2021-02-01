@@ -9,7 +9,8 @@ AFRAME.registerSystem("chess-arbiter", {
     this.chessGame = this.sceneEl.querySelector("a-entity[chess-game]");
     this.sceneEl.addEventListener("chess-command", ev => {
       const command = ev.detail[0];
-      this.handleChatCommand(command);
+      const param = ev.detail[1];
+      this.handleChatCommand(command, param);
     });
     this.resetGame();
     GameNetwork.setupNetwork(this.sceneEl);
@@ -17,9 +18,9 @@ AFRAME.registerSystem("chess-arbiter", {
 
   tick() {
     if (this.state.imPlaying) {
-      const pieces = this.sceneEl.querySelector("a-entity[chess-set]").children;
+      const pieces = Array.prototype.slice.call(this.sceneEl.querySelector("a-entity[chess-set]").children).map(x => x.firstChild)
       for (const piece of pieces) {
-        if (piece.metadata) {
+        if (piece && piece.metadata) {
           this.interactionHandler(piece);
         }
       }
@@ -30,13 +31,12 @@ AFRAME.registerSystem("chess-arbiter", {
     this.chessEngine = new Chess();
   },
 
-  handleChatCommand(command) {
+  handleChatCommand(command, param) {
     const id = GameNetwork.getMyId();
     const profile = window.APP.store.state.profile;
     switch (command) {
       case "play":
-        const color = ev.detail[1];
-        this.playAs(color, id, profile);
+        this.playAs(param, id, profile);
         break;
       case "reset":
         this.resetGame();
@@ -138,9 +138,7 @@ AFRAME.registerSystem("chess-arbiter", {
         if (!move || lastSquare === destinationSquare.square) {
           this.onPieceGoBack(piece);
         } else if (move) {
-          if (piece.metadata.snapToSquare) {
-            this.snapPiece(piece);
-          }
+          this.snapPiece(piece);
         }
       }
     }
