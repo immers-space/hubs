@@ -36,7 +36,7 @@ AFRAME.registerSystem("chess-arbiter", {
     const profile = window.APP.store.state.profile;
     switch (command) {
       case "play":
-          this.playAs(param, id, profile);
+        this.playAs(param, id, profile);
         break;
       case "reset":
         this.resetGame();
