@@ -222,6 +222,14 @@ import qsTruthy from "./utils/qs_truthy";
 
 import "./components/immers-follow-button";
 import "./components/monetization-visible";
+import "aframe-state-component";
+import "./chess/game-state";
+import "./chess/chess-arbiter";
+import "./chess/chess-game";
+import "./chess/chess-board";
+import "./chess/chess-set";
+import "./chess/chess-piece";
+import "./chess/chess-cursor";
 
 const PHOENIX_RELIABLE_NAF = "phx-reliable";
 NAF.options.firstSyncSource = PHOENIX_RELIABLE_NAF;
