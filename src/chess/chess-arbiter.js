@@ -18,7 +18,7 @@ AFRAME.registerSystem("chess-arbiter", {
 
   tick() {
     if (this.state.imPlaying) {
-      const pieces = Array.prototype.slice.call(this.sceneEl.querySelector("a-entity[chess-set]").children).map(x => x.firstChild)
+      const pieces = this.sceneEl.querySelectorAll("a-entity[chess-set] a-entity[chess-piece] a-entity.chess-piece");
       for (const piece of pieces) {
         if (piece && piece.metadata) {
           this.interactionHandler(piece);
