@@ -71,7 +71,9 @@ function setupNetwork(scene) {
     window.NAF.connection.subscribeToDataChannel("chess::capture-piece", (_, dataType, data) => {
       if (state.imPlaying) {
         const piece = PositioningUtils.getPieceFromSquare(data.square);
-        piece.parentNode.removeChild(piece);
+        const pieceParent = piece.parentNode;
+        pieceParent.removeChild(piece);
+        pieceParent.parentNode.removeChild(pieceParent);
         scene.emit("removePiece", { id: piece.id, color: piece.metadata.color });
         window.NAF.connection.broadcastDataGuaranteed("chess::remove-piece", {
           id: piece.id,

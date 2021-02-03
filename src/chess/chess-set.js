@@ -17,11 +17,11 @@ AFRAME.registerComponent("chess-set", {
   },
 
   init() {
-    this.detectBoard();
+    this.detectGame();
     this.buildSet(this.data.color);
   },
 
-  detectBoard() {
+  detectGame() {
     this.scene = this.el.sceneEl;
     this.chessGame = this.scene.querySelector("a-entity[chess-game]");
     const yCorrectionsArray = this.chessGame.getAttribute("chess-game").yCorrections.split(" ");

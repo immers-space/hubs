@@ -7,14 +7,14 @@ AFRAME.registerComponent("chess-cursor", {
     this.addEventListeners = this.addEventListeners.bind(this);
     this.removeEventListeners = this.removeEventListeners.bind(this);
     this.eventHandler = this.eventHandler.bind(this);
-    this.detectBoard();
+    this.detectGame();
     this.createVisual();
     this.addEventListeners();
   },
   remove() {
     this.removeEventListeners();
   },
-  detectBoard() {
+  detectGame() {
     this.scene = this.el.sceneEl;
     this.chessGame = this.scene.querySelector("a-entity[chess-game]");
     this.squareSize = this.chessGame.getAttribute("chess-game").squareSize;
