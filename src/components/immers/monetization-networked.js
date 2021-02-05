@@ -46,6 +46,7 @@ AFRAME.registerComponent("monetization-networked", {
     if (monetized !== this.lastMonetized) {
       this.el.emit(`immers-monetization-${monetized ? "started" : "stopped"}`, undefined, false);
     }
+    this.lastMonetized = monetized;
   },
   init() {
     this.lastMonetized = false;
