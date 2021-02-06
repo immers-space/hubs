@@ -85,11 +85,15 @@ function setupNetwork(scene) {
 }
 
 function broadcastData(key, value) {
-  window.NAF.connection.broadcastDataGuaranteed(key, value);
+  if (window.NAF.connection.isConnected()) {
+    window.NAF.connection.broadcastDataGuaranteed(key, value);
+  }
 }
 
 function sendData(to, key, value) {
-  window.NAF.connection.sendDataGuaranteed(to, key, value);
+  if (window.NAF.connection.isConnected()) {
+    window.NAF.connection.sendDataGuaranteed(to, key, value);
+  }
 }
 
 function getMyId() {
