@@ -221,6 +221,14 @@ import detectConcurrentLoad from "./utils/concurrent-load-detector";
 import qsTruthy from "./utils/qs_truthy";
 
 import "./components/immers/index";
+import "aframe-state-component";
+import "./chess/game-state";
+import "./chess/chess-arbiter";
+import "./chess/chess-game";
+import "./chess/chess-board";
+import "./chess/chess-set";
+import "./chess/chess-piece";
+import "./chess/chess-cursor";
 
 const PHOENIX_RELIABLE_NAF = "phx-reliable";
 NAF.options.firstSyncSource = PHOENIX_RELIABLE_NAF;

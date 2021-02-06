@@ -174,6 +174,9 @@ export default class MessageDispatch {
           }
         }
         break;
+      case "chess":
+        this.scene.emit("chess-command", args);
+        break;
     }
   };
 }
