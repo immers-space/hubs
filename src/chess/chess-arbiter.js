@@ -12,7 +12,7 @@ AFRAME.registerSystem("chess-arbiter", {
       const param = ev.detail[1];
       this.handleChatCommand(command, param);
     });
-    this.resetGame();
+    this.startGame();
     GameNetwork.setupNetwork(this.sceneEl);
   },
 
@@ -27,8 +27,20 @@ AFRAME.registerSystem("chess-arbiter", {
     }
   },
 
+  startGame() {
+		this.chessEngine = new Chess();
+	},
+
   resetGame() {
-    this.chessEngine = new Chess();
+    document.body.removeEventListener("clientConnected", this.announceCurrentPlayer);
+    this.destroyMyPieces();
+    this.sceneEl.emit('resetChessState');
+    this.startGame();
+  },
+
+  resetNetworkedGame() {
+    GameNetwork.broadcastData("chess::reset-game", {});
+    this.resetGame();
   },
 
   handleChatCommand(command, param) {
@@ -39,7 +51,7 @@ AFRAME.registerSystem("chess-arbiter", {
         this.playAs(param, id, profile);
         break;
       case "reset":
-        this.resetGame();
+        this.resetNetworkedGame();
         break;
       case "w":
         this.playAs("white", id, profile);
@@ -53,7 +65,7 @@ AFRAME.registerSystem("chess-arbiter", {
   playAs(color, id, profile) {
     const colorAvailable = !this.state.players[color].id;
     if (colorAvailable) {
-      this.el.sceneEl.emit("imPlaying", { color, id, profile });
+      this.sceneEl.emit("imPlaying", { color, id, profile });
       GameNetwork.broadcastData("chess::set-player", { color, id, profile });
       const chessSet = document.createElement("a-entity");
       chessSet.setAttribute("chess-set", `color: ${color}`);
@@ -61,16 +73,18 @@ AFRAME.registerSystem("chess-arbiter", {
       this.chessGame.appendChild(chessSet);
       this.teleportPlayer(color);
       // When new players connect, send them information on current players directly.
-      document.body.addEventListener("clientConnected", ev => {
-        const playerData = {
-          id: GameNetwork.getMyId(),
-          profile: window.APP.store.state.profile,
-          color: color,
-          pieces: this.state.players[color].pieces
-        };
-        GameNetwork.sendData(ev.detail.clientId, "chess::set-player", playerData);
-      });
+      document.body.addEventListener("clientConnected", this.announceCurrentPlayer);
     }
+  },
+
+  announceCurrentPlayer(ev) {
+    const playerData = {
+      id: GameNetwork.getMyId(),
+      profile: window.APP.store.state.profile,
+      color: color,
+      pieces: this.state.players[color].pieces
+    };
+    GameNetwork.sendData(ev.detail.clientId, "chess::set-player", playerData);
   },
 
   interactionHandler(piece) {
@@ -267,5 +281,17 @@ AFRAME.registerSystem("chess-arbiter", {
 
   squareCaptured(square) {
     GameNetwork.sendData(this.state.opponentId, "chess::capture-piece", { square });
-  }
+  },
+
+  destroyMyPieces() {
+    const chessSets = document.querySelectorAll('a-entity[chess-set]');
+    for (const set of chessSets) {
+      for (const child of set.children) {
+        window.NAF.utils.takeOwnership(child);
+        set.removeChild(child)
+      }
+      window.NAF.utils.takeOwnership(set);
+      set.parentNode.removeChild(set)
+    }
+	},
 });
