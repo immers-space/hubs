@@ -220,8 +220,7 @@ import detectConcurrentLoad from "./utils/concurrent-load-detector";
 
 import qsTruthy from "./utils/qs_truthy";
 
-import "./components/immers-follow-button";
-import "./components/monetization-visible";
+import "./components/immers/index";
 
 const PHOENIX_RELIABLE_NAF = "phx-reliable";
 NAF.options.firstSyncSource = PHOENIX_RELIABLE_NAF;
