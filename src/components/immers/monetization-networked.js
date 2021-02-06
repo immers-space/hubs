@@ -11,10 +11,8 @@
  */
 const players = {};
 
-AFRAME.registerSystem("monetization-visible", {
+AFRAME.registerSystem("monetization-networked", {
   init() {
-    this.mo = new MutationObserver(this.onMutation);
-    this.mo.observe(this.el, { subtree: true, childList: true });
     this.onMonetizationChange = this.onMonetizationChange.bind(this);
     this.entities = [];
     this.el.addEventListener("immers-player-monetization", this.onMonetizationChange);
@@ -33,37 +31,25 @@ AFRAME.registerSystem("monetization-visible", {
     const index = this.entities.indexOf(el);
     this.entities.splice(index, 1);
   },
-  // inject component into spoke scene entities (spoke saves names as classes)
-  onMutation(records) {
-    const mv = "monetization-visible";
-    for (const record of records) {
-      for (const node of record.addedNodes) {
-        if (!(node.nodeType === document.ELEMENT_NODE)) continue;
-        if (node.classList.contains(mv)) node.setAttribute(mv, {});
-        for (const descendant of node.querySelectorAll(`.${mv}`)) {
-          descendant.setAttribute(mv, {});
-        }
-      }
-    }
-  },
   onMonetizationChange(event) {
     players[event.detail.immersId] = event.detail.monetized;
     const numMonetized = Object.values(players).reduce((a, b) => a + b, 0);
     for (const entity of this.entities) {
-      entity.components["monetization-visible"].checkMonetization(numMonetized);
+      entity.components["monetization-networked"].shareMonetization(numMonetized);
     }
   }
 });
 
-AFRAME.registerComponent("monetization-visible", {
-  schema: {
-    monetized: { type: "boolean", default: false }
-  },
-  checkMonetization(count) {
-    this.el.setAttribute("visible", count > 0);
+AFRAME.registerComponent("monetization-networked", {
+  shareMonetization(count) {
+    const monetized = !!count;
+    if (monetized !== this.lastMonetized) {
+      this.el.emit(`immers-monetization-${monetized ? "started" : "stopped"}`, undefined, false);
+    }
+    this.lastMonetized = monetized;
   },
   init() {
-    this.el.setAttribute("visible", false);
+    this.lastMonetized = false;
     this.system.registerMe(this.el);
   },
   remove() {

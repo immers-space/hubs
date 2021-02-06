@@ -54,6 +54,8 @@ function onMonetizationProgress(event) {
 function onSceneLoaded() {
   if (document.monetization.state === "started") {
     onMonetizationStart();
+  } else {
+    onMonetizationStop();
   }
   document.monetization.addEventListener("monetizationstart", onMonetizationStart);
   document.monetization.addEventListener("monetizationstop", onMonetizationStop);
