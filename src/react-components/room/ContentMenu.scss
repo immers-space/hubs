@@ -66,3 +66,9 @@
   margin: 0 8px;
   background-color: theme.$lightgrey;
 }
+
+:local(.notifier) {
+  color: #FF3464;
+  font-size: 1.5em;
+  margin-left: -8px;
+}

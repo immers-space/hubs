@@ -38,6 +38,7 @@ export function PeopleMenuButton(props) {
       <span>
         <FormattedMessage id="content-menu.people-menu-button" defaultMessage="People" />
       </span>
+      {props.notification && <span className={className(styles.notifier)}>*</span>}
     </ContentMenuButton>
   );
 }

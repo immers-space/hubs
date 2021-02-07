@@ -248,8 +248,8 @@ class UIRoot extends Component {
         }, 0);
       });
     }
-    // TOOD state.isPresenceListExpanded is gone
-    if (prevProps.friends !== this.props.friends && !this.state.isPresenceListExpanded) {
+
+    if (prevProps.friends !== this.props.friends && this.state.sidebarId !== "people") {
       this.setState({ hasUnreadFriendUpdate: true });
       this.props.scene.addState("notification");
     } else if (!this.state.hasUnreadFriendUpdate) {
@@ -1364,7 +1364,8 @@ class UIRoot extends Component {
                         )}
                         <PeopleMenuButton
                           active={this.state.sidebarId === "people"}
-                          onClick={() => this.toggleSidebar("people")}
+                          onClick={() => this.toggleSidebar("people", { hasUnreadFriendUpdate: false })}
+                          notification={this.state.hasUnreadFriendUpdate}
                         />
                       </ContentMenu>
                     )}
