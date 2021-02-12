@@ -82,11 +82,21 @@ function getPresenceMessage(presence, intl) {
   }
 }
 
-function getLocationMessage(activity, intl) {
+function getLocationMessage(activity, myHandle, intl) {
   switch (activity.type) {
     case "Arrive": {
       const onlineMsg = intl.formatMessage({ id: "people-sidebar.immers.online", defaultMessage: "Online at" });
-      const placeUrl = activity.target?.url;
+      let placeUrl = activity.target?.url;
+      // inject user handle into desintation url so they don't have to type it
+      try {
+        const url = new URL(placeUrl);
+        const search = new URLSearchParams(url.search);
+        search.set("me", myHandle);
+        url.search = search.toString();
+        placeUrl = url.toString();
+      } catch (ignore) {
+        /* if fail, leave original url unchanged */
+      }
       return (
         <span>
           {onlineMsg} <a href={placeUrl}>{activity.target?.name ?? "unkown"}</a>
@@ -119,7 +129,7 @@ function getPersonName(person, intl) {
 
 export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, onMuteAll }) {
   const intl = useIntl();
-
+  const myHandle = people.find(person => person.isMe)?.profile.handle;
   return (
     <Sidebar
       title={
@@ -169,7 +179,7 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
                 />
               )}
               <p className={styles.presence}>
-                {getPresenceMessage(person.presence, intl) ?? getLocationMessage(person.friendStatus, intl)}
+                {getPresenceMessage(person.presence, intl) ?? getLocationMessage(person.friendStatus, myHandle, intl)}
               </p>
             </ButtonListItem>
           );
