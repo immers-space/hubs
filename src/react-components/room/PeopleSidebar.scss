@@ -27,3 +27,13 @@
   flex: 1;
   justify-content: flex-end;
 }
+
+:local(.image-icon-wrapper) {
+  width: 20px;
+  height: 20px;
+  overflow: hidden;
+}
+
+:local(.image-icon) {
+  width: 20px;
+}

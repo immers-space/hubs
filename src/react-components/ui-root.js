@@ -1442,6 +1442,7 @@ class UIRoot extends Component {
                           history={this.props.history}
                           mySessionId={this.props.sessionId}
                           presences={this.props.presences}
+                          friends={this.props.friends}
                           onClose={() => this.setSidebar(null)}
                           onCloseDialog={() => this.closeDialog()}
                           showNonHistoriedDialog={this.showNonHistoriedDialog}

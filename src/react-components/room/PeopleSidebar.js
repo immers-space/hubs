@@ -12,8 +12,10 @@ import { ReactComponent as VRIcon } from "../icons/VR.svg";
 import { ReactComponent as VolumeOffIcon } from "../icons/VolumeOff.svg";
 import { ReactComponent as VolumeHighIcon } from "../icons/VolumeHigh.svg";
 import { ReactComponent as VolumeMutedIcon } from "../icons/VolumeMuted.svg";
+import immersLogo from "../icons/immers_logo.png";
 import { List, ButtonListItem } from "../layout/List";
 import { FormattedMessage, useIntl } from "react-intl";
+import { proxiedUrlFor } from "../../utils/media-url-utils";
 
 function getDeviceLabel(ctx, intl) {
   if (ctx) {
@@ -80,6 +82,32 @@ function getPresenceMessage(presence, intl) {
   }
 }
 
+function getLocationMessage(activity, intl) {
+  switch (activity.type) {
+    case "Arrive": {
+      const onlineMsg = intl.formatMessage({ id: "people-sidebar.immers.online", defaultMessage: "Online at" });
+      const placeUrl = activity.target?.url;
+      return (
+        <span>
+          {onlineMsg} <a href={placeUrl}>{activity.target?.name ?? "unkown"}</a>
+        </span>
+      );
+    }
+    case "Leave":
+      return intl.formatMessage({ id: "people-sidebar.immers.offline", defaultMessage: "Offline" });
+    default:
+      return "";
+  }
+}
+
+function imageIcon(src) {
+  return (
+    <span className={styles.imageIconWrapper}>
+      {src && <img className={styles.imageIcon} src={proxiedUrlFor(src)} />}
+    </span>
+  );
+}
+
 function getPersonName(person, intl) {
   const you = intl.formatMessage({
     id: "people-sidebar.person-name.you",
@@ -123,9 +151,14 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
               key={person.id}
               type="button"
               onClick={e => onSelectPerson(person, e)}
+              disabled={person.remote}
             >
-              {<DeviceIcon title={getDeviceLabel(person.context, intl)} />}
-              {!person.context.discord && VoiceIcon && <VoiceIcon title={getVoiceLabel(person.micPresence, intl)} />}
+              {person.remote ? imageIcon(immersLogo) : <DeviceIcon title={getDeviceLabel(person.context, intl)} />}
+              {person.remote
+                ? imageIcon(person.friendStatus.actor.icon)
+                : !person.context.discord &&
+                  !person.remote &&
+                  VoiceIcon && <VoiceIcon title={getVoiceLabel(person.micPresence, intl)} />}
               <p>{getPersonName(person, intl)}</p>
               {person.roles.owner && (
                 <StarIcon
@@ -135,7 +168,9 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
                   height={12}
                 />
               )}
-              <p className={styles.presence}>{getPresenceMessage(person.presence, intl)}</p>
+              <p className={styles.presence}>
+                {getPresenceMessage(person.presence, intl) ?? getLocationMessage(person.friendStatus, intl)}
+              </p>
             </ButtonListItem>
           );
         })}

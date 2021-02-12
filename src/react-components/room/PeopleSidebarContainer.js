@@ -11,18 +11,54 @@ export function userFromPresence(sessionId, presence, micPresences, mySessionId)
   return { id: sessionId, isMe: mySessionId === sessionId, micPresence, ...meta };
 }
 
-function usePeopleList(presences, mySessionId, micUpdateFrequency = 500) {
+function usePeopleList(presences, mySessionId, friends, micUpdateFrequency = 500) {
   const [people, setPeople] = useState([]);
-
   useEffect(
     () => {
       let timeout;
 
+      const friendsAndPresences = Object.assign({}, presences);
+      const presenceFriendLookup = Object.fromEntries(
+        Object.entries(presences).map(([, presence]) => [
+          presence.metas[presence.metas.length - 1].profile.id,
+          presence
+        ])
+      );
+      friends.sort((a, b) => {
+        if (a.type === b.type) {
+          return 0;
+        }
+        if (a.type === "Leave") {
+          return 1;
+        }
+        return -1;
+      });
+      friends.forEach(friend => {
+        const localPresence = presenceFriendLookup[friend.actor.id];
+        if (localPresence) {
+          localPresence.metas[localPresence.metas.length - 1].friendStatus = friend;
+        } else {
+          friendsAndPresences[friend.id] = {
+            id: friend.actor.id,
+            metas: [
+              {
+                context: {},
+                profile: {
+                  displayName: friend.actor.name
+                },
+                roles: {},
+                friendStatus: friend,
+                remote: true
+              }
+            ]
+          };
+        }
+      });
       function updateMicrophoneState() {
         const micPresences = getMicrophonePresences();
 
         setPeople(
-          Object.entries(presences).map(([id, presence]) => {
+          Object.entries(friendsAndPresences).map(([id, presence]) => {
             return userFromPresence(id, presence, micPresences, mySessionId);
           })
         );
@@ -36,7 +72,7 @@ function usePeopleList(presences, mySessionId, micUpdateFrequency = 500) {
         clearTimeout(timeout);
       };
     },
-    [presences, micUpdateFrequency, setPeople, mySessionId]
+    [presences, friends, micUpdateFrequency, setPeople, mySessionId]
   );
 
   return people;
@@ -75,6 +111,7 @@ PeopleListContainer.propTypes = {
 export function PeopleSidebarContainer({
   hubChannel,
   presences,
+  friends,
   mySessionId,
   displayNameOverride,
   store,
@@ -84,7 +121,7 @@ export function PeopleSidebarContainer({
   showNonHistoriedDialog,
   onClose
 }) {
-  const people = usePeopleList(presences, mySessionId);
+  const people = usePeopleList(presences, mySessionId, friends);
   const [selectedPersonId, setSelectedPersonId] = useState(null);
   const selectedPerson = people.find(person => person.id === selectedPersonId);
   const setSelectedPerson = useCallback(
@@ -137,6 +174,7 @@ PeopleSidebarContainer.propTypes = {
   onClose: PropTypes.func.isRequired,
   mySessionId: PropTypes.string.isRequired,
   presences: PropTypes.object.isRequired,
+  friends: PropTypes.array.isRequired,
   performConditionalSignIn: PropTypes.func.isRequired,
   onCloseDialog: PropTypes.func.isRequired,
   showNonHistoriedDialog: PropTypes.func.isRequired
