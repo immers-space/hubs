@@ -96,14 +96,15 @@ export function SubmitEmail({ onSubmitEmail, initialEmail, privacyUrl, termsUrl,
     },
     [setEmail]
   );
-
+  // immers: disable signin prompt
+  message = undefined;
   return (
     <Column center padding as="form" onSubmit={onSubmitForm}>
       <p>
         {message ? (
           intl.formatMessage(message)
         ) : (
-          <FormattedMessage id="sign-in-modal.prompt" defaultMessage="Please Sign In" />
+          <FormattedMessage id="sign-in-modal.prompt" defaultMessage="Only site adminstrators can do this action" />
         )}
       </p>
       <TextInputField
