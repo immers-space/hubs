@@ -12,7 +12,7 @@ import { ReactComponent as VRIcon } from "../icons/VR.svg";
 import { ReactComponent as VolumeOffIcon } from "../icons/VolumeOff.svg";
 import { ReactComponent as VolumeHighIcon } from "../icons/VolumeHigh.svg";
 import { ReactComponent as VolumeMutedIcon } from "../icons/VolumeMuted.svg";
-import immersLogo from "../icons/immers_logo.png";
+import immersLogo from "../../assets/images/immers_logo.png";
 import { List, ButtonListItem } from "../layout/List";
 import { FormattedMessage, useIntl } from "react-intl";
 import { proxiedUrlFor } from "../../utils/media-url-utils";
