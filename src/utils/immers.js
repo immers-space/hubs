@@ -350,7 +350,7 @@ export async function initialize(store, scene, remountUI) {
       leave: {
         type: "Leave",
         actor: actorObj.id,
-        target: window.location.href,
+        target: place,
         to: actorObj.followers
       }
     });
