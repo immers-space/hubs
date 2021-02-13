@@ -10,11 +10,13 @@ export function userFromPresence(sessionId, presence, micPresences, mySessionId)
   const micPresence = micPresences.get(sessionId);
   return { id: sessionId, isMe: mySessionId === sessionId, micPresence, ...meta };
 }
-
+// sometimes the mic presence timeout fails to clear
+let lastTimeout;
 function usePeopleList(presences, mySessionId, friends, micUpdateFrequency = 500) {
   const [people, setPeople] = useState([]);
   useEffect(
     () => {
+      clearTimeout(lastTimeout);
       let timeout;
 
       const friendsAndPresences = Object.assign({}, presences);
@@ -64,6 +66,7 @@ function usePeopleList(presences, mySessionId, friends, micUpdateFrequency = 500
         );
 
         timeout = setTimeout(updateMicrophoneState, micUpdateFrequency);
+        lastTimeout = timeout;
       }
 
       updateMicrophoneState();
