@@ -3,7 +3,7 @@ import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.4.0");
+console.log("immers.space client v0.4.1");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
@@ -132,7 +132,7 @@ export async function createAvatar(actorObj, hubsAvatarId) {
       mediaType: hubsAvatar.gltf_url.includes(".glb") ? "model/gltf-binary" : "model/gltf+json"
     },
     to: actorObj.followers,
-    generator: place.id
+    generator: place
   };
   if (hubsAvatar.files.thumbnail) {
     immersAvatar.icon = hubsAvatar.files.thumbnail;
@@ -212,8 +212,9 @@ export async function fetchMyImmersAvatars(page) {
             url: preview
           }
         },
-        // the url displayed on hover is the immers link
-        url: avatar.id
+        // display source immer name & link in description field
+        attributions: { publisher: { name: avatar.generator?.name } },
+        url: avatar.generator?.url || avatar.id
       });
     });
   } catch (err) {

@@ -12,8 +12,10 @@ import { ReactComponent as VRIcon } from "../icons/VR.svg";
 import { ReactComponent as VolumeOffIcon } from "../icons/VolumeOff.svg";
 import { ReactComponent as VolumeHighIcon } from "../icons/VolumeHigh.svg";
 import { ReactComponent as VolumeMutedIcon } from "../icons/VolumeMuted.svg";
+import immersLogo from "../../assets/images/immers_logo.png";
 import { List, ButtonListItem } from "../layout/List";
 import { FormattedMessage, useIntl } from "react-intl";
+import { proxiedUrlFor } from "../../utils/media-url-utils";
 
 function getDeviceLabel(ctx, intl) {
   if (ctx) {
@@ -80,6 +82,42 @@ function getPresenceMessage(presence, intl) {
   }
 }
 
+function getLocationMessage(activity, myHandle, intl) {
+  switch (activity.type) {
+    case "Arrive": {
+      const onlineMsg = intl.formatMessage({ id: "people-sidebar.immers.online", defaultMessage: "Online at" });
+      let placeUrl = activity.target?.url;
+      // inject user handle into desintation url so they don't have to type it
+      try {
+        const url = new URL(placeUrl);
+        const search = new URLSearchParams(url.search);
+        search.set("me", myHandle);
+        url.search = search.toString();
+        placeUrl = url.toString();
+      } catch (ignore) {
+        /* if fail, leave original url unchanged */
+      }
+      return (
+        <span>
+          {onlineMsg} <a href={placeUrl}>{activity.target?.name ?? "unkown"}</a>
+        </span>
+      );
+    }
+    case "Leave":
+      return intl.formatMessage({ id: "people-sidebar.immers.offline", defaultMessage: "Offline" });
+    default:
+      return "";
+  }
+}
+
+function imageIcon(src) {
+  return (
+    <span className={styles.imageIconWrapper}>
+      {src && <img className={styles.imageIcon} src={proxiedUrlFor(src)} />}
+    </span>
+  );
+}
+
 function getPersonName(person, intl) {
   const you = intl.formatMessage({
     id: "people-sidebar.person-name.you",
@@ -91,7 +129,7 @@ function getPersonName(person, intl) {
 
 export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, onMuteAll }) {
   const intl = useIntl();
-
+  const myHandle = people.find(person => person.isMe)?.profile.handle;
   return (
     <Sidebar
       title={
@@ -123,9 +161,14 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
               key={person.id}
               type="button"
               onClick={e => onSelectPerson(person, e)}
+              disabled={person.remote}
             >
-              {<DeviceIcon title={getDeviceLabel(person.context, intl)} />}
-              {!person.context.discord && VoiceIcon && <VoiceIcon title={getVoiceLabel(person.micPresence, intl)} />}
+              {person.remote ? imageIcon(immersLogo) : <DeviceIcon title={getDeviceLabel(person.context, intl)} />}
+              {person.remote
+                ? imageIcon(person.friendStatus.actor.icon)
+                : !person.context.discord &&
+                  !person.remote &&
+                  VoiceIcon && <VoiceIcon title={getVoiceLabel(person.micPresence, intl)} />}
               <p>{getPersonName(person, intl)}</p>
               {person.roles.owner && (
                 <StarIcon
@@ -135,7 +178,9 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
                   height={12}
                 />
               )}
-              <p className={styles.presence}>{getPresenceMessage(person.presence, intl)}</p>
+              <p className={styles.presence}>
+                {getPresenceMessage(person.presence, intl) ?? getLocationMessage(person.friendStatus, myHandle, intl)}
+              </p>
             </ButtonListItem>
           );
         })}

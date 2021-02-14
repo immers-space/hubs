@@ -7,17 +7,19 @@ import { ReactComponent as ObjectsIcon } from "../icons/Objects.svg";
 import { ReactComponent as PeopleIcon } from "../icons/People.svg";
 import { FormattedMessage } from "react-intl";
 
-export function ContentMenuButton({ active, children, ...props }) {
+export function ContentMenuButton({ active, children, notification, ...props }) {
   return (
     <button className={className(styles.contentMenuButton, { [styles.active]: active })} {...props}>
       {children}
+      {notification && <span className={className(styles.notifier)}>*</span>}
     </button>
   );
 }
 
 ContentMenuButton.propTypes = {
   children: PropTypes.node,
-  active: PropTypes.bool
+  active: PropTypes.bool,
+  notification: PropTypes.bool
 };
 
 export function ObjectsMenuButton(props) {
