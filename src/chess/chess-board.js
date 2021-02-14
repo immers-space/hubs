@@ -29,7 +29,7 @@ AFRAME.registerComponent("chess-board", {
   buildRank(rank, offset, altColor) {
     offset = offset || 0;
     const files = [1, 2, 3, 4, 5, 6, 7, 8];
-    const rankContainer = window.document.createElement("a-entity");
+    const rankContainer = document.createElement("a-entity");
     let z = 0;
     for (let i = 0, filesLen = files.length; i < filesLen; i++) {
       const position = offset + " " + this.data.squareSize + " " + z;
@@ -42,7 +42,7 @@ AFRAME.registerComponent("chess-board", {
   },
 
   buildSquare(index, position, altColor, rank) {
-    const box = window.document.createElement("a-box");
+    const box = document.createElement("a-box");
     box.setAttribute("position", position);
     box.setAttribute("height", this.data.squareSize);
     box.setAttribute("width", this.data.squareSize);

@@ -7,10 +7,11 @@ AFRAME.registerSystem("chess-arbiter", {
     this.tick = AFRAME.utils.throttleTick(this.tick, 300, this);
     this.state = this.sceneEl.systems.state.state;
     this.chessGame = this.sceneEl.querySelector("a-entity[chess-game]");
+    this.announceCurrentPlayer = this.announceCurrentPlayer.bind(this);
     this.sceneEl.addEventListener("chess-command", ev => {
-      const command = ev.detail[0];
-      const param = ev.detail[1];
-      this.handleChatCommand(command, param);
+      const params = ev.detail;
+      const command = params.shift();
+      this.handleChatCommand(command, params);
     });
     this.startGame();
     GameNetwork.setupNetwork(this.sceneEl);
@@ -27,28 +28,29 @@ AFRAME.registerSystem("chess-arbiter", {
     }
   },
 
-  startGame() {
-		this.chessEngine = new Chess();
+  startGame(fen = '') {
+		this.chessEngine = (fen) ? new Chess(fen) : new Chess();
 	},
 
-  resetGame() {
+  resetGame(fen = '') {
     document.body.removeEventListener("clientConnected", this.announceCurrentPlayer);
     this.destroyMyPieces();
     this.sceneEl.emit('resetChessState');
-    this.startGame();
+    this.startGame(fen);
   },
 
-  resetNetworkedGame() {
+  resetNetworkedGame(fen = '') {
     GameNetwork.broadcastData("chess::reset-game", {});
-    this.resetGame();
+    this.resetGame(fen);
   },
 
-  handleChatCommand(command, param) {
+  handleChatCommand(command, params) {
     const id = GameNetwork.getMyId();
     const profile = window.APP.store.state.profile;
     switch (command) {
       case "play":
-        this.playAs(param, id, profile);
+        const color = params[0]
+        this.playAs(color, id, profile);
         break;
       case "reset":
         this.resetNetworkedGame();
@@ -58,6 +60,10 @@ AFRAME.registerSystem("chess-arbiter", {
         break;
       case "b":
         this.playAs("black", id, profile);
+        break;
+      case "fen": 
+        const fen = params.join(' ');
+        this.resetNetworkedGame(fen);
         break;
     }
   },
@@ -78,6 +84,7 @@ AFRAME.registerSystem("chess-arbiter", {
   },
 
   announceCurrentPlayer(ev) {
+    const color = this.state.myColor;
     const playerData = {
       id: GameNetwork.getMyId(),
       profile: window.APP.store.state.profile,
