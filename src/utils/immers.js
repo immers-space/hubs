@@ -3,7 +3,7 @@ import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.4.0");
+console.log("immers.space client v0.4.1");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
@@ -132,7 +132,7 @@ export async function createAvatar(actorObj, hubsAvatarId) {
       mediaType: hubsAvatar.gltf_url.includes(".glb") ? "model/gltf-binary" : "model/gltf+json"
     },
     to: actorObj.followers,
-    generator: place.id
+    generator: place
   };
   if (hubsAvatar.files.thumbnail) {
     immersAvatar.icon = hubsAvatar.files.thumbnail;
@@ -212,8 +212,9 @@ export async function fetchMyImmersAvatars(page) {
             url: preview
           }
         },
-        // the url displayed on hover is the immers link
-        url: avatar.id
+        // display source immer name & link in description field
+        attributions: { publisher: { name: avatar.generator?.name } },
+        url: avatar.generator?.url || avatar.id
       });
     });
   } catch (err) {
@@ -308,10 +309,13 @@ export async function initialize(store, scene, remountUI) {
   // immers profile
   actorObj = await authPromise;
   const initialAvi = store.state.profile.avatarId;
+  const actorAvi = getAvatarFromActor(actorObj);
+  // cache current avatar so doesn't get recreated during a profile update
+  myAvatars[actorAvi] = Array.isArray(actorObj.avatar) ? actorObj.avatar[0] : actorObj.avatar;
   store.update({
     profile: {
       id: actorObj.id,
-      avatarId: getAvatarFromActor(actorObj) || initialAvi,
+      avatarId: actorAvi || initialAvi,
       displayName: actorObj.name,
       handle: `${actorObj.preferredUsername}[${new URL(homeImmer).host}]`,
       inbox: actorObj.inbox,
@@ -347,7 +351,7 @@ export async function initialize(store, scene, remountUI) {
       leave: {
         type: "Leave",
         actor: actorObj.id,
-        target: window.location.href,
+        target: place,
         to: actorObj.followers
       }
     });
@@ -376,21 +380,24 @@ export async function initialize(store, scene, remountUI) {
 
   scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
-    // const avatar = await fetchAvatar(profile.avatarId);
-    const avatar = myAvatars[profile.avatarId] || (await createAvatar(actorObj, profile.avatarId)).object;
-    updateProfile(actorObj, {
-      name: profile.displayName,
-      avatar,
-      icon: avatar.icon
-    })
-      .then(() => {
-        store.update({
-          activity: {
-            hasChangedName: true
-          }
-        });
-      })
-      .catch(err => console.error("Error updating profile:", err.message));
+    const update = {};
+    if (profile.displayName !== actorObj.name) {
+      update.name = profile.displayName;
+    }
+    if (getAvatarFromActor(actorObj) !== profile.avatarId) {
+      update.avatar = myAvatars[profile.avatarId] || (await createAvatar(actorObj, profile.avatarId)).object;
+      update.icon = update.avatar.icon;
+    }
+    // only publish update if something changed
+    if (Object.keys(update).length) {
+      await updateProfile(actorObj, update).catch(err => console.error("Error updating profile:", err.message));
+    }
+    // disable the first-time entry name & avatar prompt
+    store.update({
+      activity: {
+        hasChangedName: true
+      }
+    });
   });
 
   // entity interactions
