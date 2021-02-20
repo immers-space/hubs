@@ -16,6 +16,7 @@ import immersLogo from "../../assets/images/immers_logo.png";
 import { List, ButtonListItem } from "../layout/List";
 import { FormattedMessage, useIntl } from "react-intl";
 import { proxiedUrlFor } from "../../utils/media-url-utils";
+import { ImmerLink } from "./ImmersReact";
 
 function getDeviceLabel(ctx, intl) {
   if (ctx) {
@@ -86,20 +87,9 @@ function getLocationMessage(activity, myHandle, intl) {
   switch (activity.type) {
     case "Arrive": {
       const onlineMsg = intl.formatMessage({ id: "people-sidebar.immers.online", defaultMessage: "Online at" });
-      let placeUrl = activity.target?.url;
-      // inject user handle into desintation url so they don't have to type it
-      try {
-        const url = new URL(placeUrl);
-        const search = new URLSearchParams(url.search);
-        search.set("me", myHandle);
-        url.search = search.toString();
-        placeUrl = url.toString();
-      } catch (ignore) {
-        /* if fail, leave original url unchanged */
-      }
       return (
         <span>
-          {onlineMsg} <a href={placeUrl}>{activity.target?.name ?? "unkown"}</a>
+          {onlineMsg} <ImmerLink place={activity.target} />
         </span>
       );
     }

@@ -246,7 +246,7 @@ MessageBubble.propTypes = {
   children: PropTypes.node
 };
 
-function getMessageComponent(message) {
+export function getMessageComponent(message) {
   switch (message.type) {
     case "chat": {
       const { formattedBody, monospace, emoji } = formatMessageBody(message.body);

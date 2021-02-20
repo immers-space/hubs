@@ -2,6 +2,7 @@ import io from "socket.io-client";
 import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
+import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
 console.log("immers.space client v0.4.1");
 const jsonldMime = "application/activity+json";
@@ -12,6 +13,7 @@ const authPromise = new Promise((resolve, reject) => {
   resolveAuth = resolve;
   rejectAuth = reject;
 });
+const activities = new Activities(localImmer);
 let homeImmer;
 let place;
 let token;
@@ -255,7 +257,7 @@ export async function auth(store) {
   }
   place = await getObject(`${localImmer}/o/immer`);
   place.url = hubUri; // include room id
-
+  activities.place = place;
   if (hashParams.has("access_token")) {
     // not safe to update store here, will be saved later in initialize()
     token = hashParams.get("access_token");
@@ -265,6 +267,8 @@ export async function auth(store) {
     token = store.state.credentials.immerToken;
     homeImmer = store.state.credentials.immerHome;
   }
+  activities.token = token;
+  activities.homeImmer = homeImmer;
 
   const redirectToAuth = () => {
     // send to token endpoint at local immer, it handles
@@ -303,11 +307,12 @@ export async function auth(store) {
   }
 }
 
-export async function initialize(store, scene, remountUI) {
+export async function initialize(store, scene, remountUI, messageDispatch) {
   hubScene = scene;
   localPlayer = document.getElementById("avatar-rig");
   // immers profile
   actorObj = await authPromise;
+  activities.actor = actorObj;
   const initialAvi = store.state.profile.avatarId;
   const actorAvi = getAvatarFromActor(actorObj);
   // cache current avatar so doesn't get recreated during a profile update
@@ -377,7 +382,14 @@ export async function initialize(store, scene, remountUI) {
   };
   updateFriends();
   immerSocket.on("friends-update", updateFriends);
-
+  // news feed
+  const updateFeed = async () => {
+    const inboxItems = await activities.inboxAsChat();
+    inboxItems.forEach(detail => {
+      messageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
+    });
+  };
+  updateFeed();
   scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
     const update = {};
@@ -418,4 +430,22 @@ export async function initialize(store, scene, remountUI) {
   });
 
   setupMonetization(hubScene, localPlayer);
+
+  // chat integration
+  messageDispatch.addEventListener("message", ({ detail: message }) => {
+    // check if it was sent by me
+    if (!message.sent) {
+      return;
+    }
+    // send activity
+    let task;
+    switch (message.type) {
+      case "chat":
+        task = activities.note(message.body, true, null);
+        break;
+      default:
+        console.log("Chat message not shared", message);
+    }
+    task.catch(err => console.error(`Error sharing chat: ${err.message}`));
+  });
 }

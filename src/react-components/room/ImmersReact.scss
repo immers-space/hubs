@@ -1,0 +1,19 @@
+@use "../styles/theme.scss";
+
+:local(.image-icon-wrapper) {
+  width: 20px;
+  height: 20px;
+  overflow: hidden;
+}
+
+:local(.image-icon) {
+  width: 20px;
+}
+
+:local(.immer-name) {
+  color: theme.$grey;
+}
+
+:local(.immer-chat-label) {
+  align-items: center;
+}

@@ -15,6 +15,7 @@ import { useMaintainScrollPosition } from "../misc/useMaintainScrollPosition";
 import { spawnChatMessage } from "../chat-message";
 import { discordBridgesForPresences } from "../../utils/phoenix-utils";
 import { useIntl } from "react-intl";
+import { ImmerChatMessage } from "./ImmersReact";
 
 const ChatContext = createContext({ messageGroups: [], sendMessage: () => {} });
 
@@ -42,6 +43,24 @@ function processChatMessage(messageGroups, newMessage) {
   const now = Date.now();
   const { name, sent, sessionId, ...messageProps } = newMessage;
 
+  if (messageProps.isImmersFeed) {
+    // insert according to timestamp
+    const newMessageGroups = messageGroups.slice();
+    const i = newMessageGroups.findIndex(group => messageProps.timestamp < group.timestamp);
+    newMessageGroups.splice(i === -1 ? 0 : i, 0, {
+      id: uniqueMessageId++,
+      isImmersFeed: messageProps.isImmersFeed,
+      timestamp: messageProps.timestamp,
+      sent: false,
+      sender: name,
+      icon: messageProps.icon,
+      senderSessionId: sessionId,
+      context: messageProps.context,
+      immer: messageProps.immer,
+      messages: [{ id: uniqueMessageId++, ...messageProps }]
+    });
+    return newMessageGroups;
+  }
   if (shouldCreateNewMessageGroup(messageGroups, newMessage, now)) {
     return [
       ...messageGroups,
@@ -251,9 +270,11 @@ export function ChatSidebarContainer({ scene, canSpawnMessages, presences, occup
   return (
     <ChatSidebar onClose={onClose}>
       <ChatMessageList ref={listRef} onScroll={onScrollList}>
-        {messageGroups.map(({ id, systemMessage, ...rest }) => {
+        {messageGroups.map(({ id, systemMessage, isImmersFeed, ...rest }) => {
           if (systemMessage) {
             return <SystemMessage key={id} {...rest} />;
+          } else if (isImmersFeed) {
+            return <ImmerChatMessage key={id} {...rest} />;
           } else {
             return <ChatMessageGroup key={id} {...rest} />;
           }
