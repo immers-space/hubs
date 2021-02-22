@@ -19,6 +19,8 @@ AFRAME.registerComponent("chess-set", {
   init() {
     this.detectGame();
     this.buildSet(this.data.color);
+    this.el.queenB = queenB;
+    this.el.queenW = queenW;
   },
 
   detectGame() {
