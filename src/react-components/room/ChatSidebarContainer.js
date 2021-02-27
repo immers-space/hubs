@@ -47,7 +47,7 @@ function processChatMessage(messageGroups, newMessage) {
     // insert according to timestamp
     const newMessageGroups = messageGroups.slice();
     const i = newMessageGroups.findIndex(group => messageProps.timestamp < group.timestamp);
-    newMessageGroups.splice(i === -1 ? 0 : i, 0, {
+    newMessageGroups.splice(i === -1 ? newMessageGroups.length : i, 0, {
       id: uniqueMessageId++,
       isImmersFeed: messageProps.isImmersFeed,
       timestamp: messageProps.timestamp,
