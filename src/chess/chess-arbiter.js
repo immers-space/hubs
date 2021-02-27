@@ -4,16 +4,25 @@ import * as Chess from "chess.js";
 
 AFRAME.registerSystem("chess-arbiter", {
   init() {
+    this.playAsEvent = this.playAsEvent.bind(this);
+    this.copyPGN = this.copyPGN.bind(this);
+    this.copyFEN = this.copyFEN.bind(this);
     this.tick = AFRAME.utils.throttleTick(this.tick, 300, this);
     this.state = this.sceneEl.systems.state.state;
     this.chessGame = this.sceneEl.querySelector("a-entity[chess-game]");
+    this.announceCurrentPlayer = this.announceCurrentPlayer.bind(this);
     this.sceneEl.addEventListener("chess-command", ev => {
-      const command = ev.detail[0];
-      const param = ev.detail[1];
-      this.handleChatCommand(command, param);
+      const params = ev.detail;
+      const command = params.shift();
+      this.handleChatCommand(command, params);
     });
     this.startGame();
     GameNetwork.setupNetwork(this.sceneEl);
+    this.addEventListeners();
+  },
+
+  remove() {
+    this.removeEventListeners();
   },
 
   tick() {
@@ -27,28 +36,59 @@ AFRAME.registerSystem("chess-arbiter", {
     }
   },
 
-  startGame() {
-		this.chessEngine = new Chess();
-	},
-
-  resetGame() {
-    document.body.removeEventListener("clientConnected", this.announceCurrentPlayer);
-    this.destroyMyPieces();
-    this.sceneEl.emit('resetChessState');
-    this.startGame();
+  addEventListeners() {
+    this.el.sceneEl.addEventListener("chess:playAs", this.playAsEvent);
+    this.el.sceneEl.addEventListener("chess:copyPGN", this.copyPGN);
+    this.el.sceneEl.addEventListener("chess:copyFEN", this.copyFEN);
   },
 
-  resetNetworkedGame() {
-    GameNetwork.broadcastData("chess::reset-game", {});
-    this.resetGame();
+  removeEventListeners() {
+    this.el.sceneEl.removeEventListener("chess:playAs", this.playAsEvent);
+    this.el.sceneEl.removeEventListener("chess:copyPGN", this.copyPGN);
+    this.el.sceneEl.removeEventListener("chess:copyFEN", this.copyFEN);
   },
 
-  handleChatCommand(command, param) {
+  playAsEvent(ev) {
+    const color = ev.detail.color;
     const id = GameNetwork.getMyId();
     const profile = window.APP.store.state.profile;
+    this.playAs(color, id, profile);
+  },
+
+  startGame(fen = "") {
+    this.chessEngine = fen ? new Chess(fen) : new Chess();
+  },
+
+  resetGame(fen = "") {
+    document.body.removeEventListener("clientConnected", this.announceCurrentPlayer);
+    this.destroyMyPieces();
+    this.sceneEl.emit("resetChessState");
+    this.startGame(fen);
+  },
+
+  resetNetworkedGame(fen = "") {
+    GameNetwork.broadcastData("chess::reset-game", {});
+    this.resetGame(fen);
+  },
+
+  copyPGN() {
+    const notation = this.chessEngine.pgn();
+    navigator.clipboard.writeText(notation);
+  },
+
+  copyFEN() {
+    const notation = this.chessEngine.fen();
+    navigator.clipboard.writeText(notation);
+  },
+
+  handleChatCommand(command, params) {
+    const id = GameNetwork.getMyId();
+    const profile = window.APP.store.state.profile;
+    const color = params[0];
+    const fen = params.join(" ");
     switch (command) {
       case "play":
-        this.playAs(param, id, profile);
+        this.playAs(color, id, profile);
         break;
       case "reset":
         this.resetNetworkedGame();
@@ -58,6 +98,9 @@ AFRAME.registerSystem("chess-arbiter", {
         break;
       case "b":
         this.playAs("black", id, profile);
+        break;
+      case "fen":
+        this.resetNetworkedGame(fen);
         break;
     }
   },
@@ -78,6 +121,7 @@ AFRAME.registerSystem("chess-arbiter", {
   },
 
   announceCurrentPlayer(ev) {
+    const color = this.state.myColor;
     const playerData = {
       id: GameNetwork.getMyId(),
       profile: window.APP.store.state.profile,
@@ -200,13 +244,13 @@ AFRAME.registerSystem("chess-arbiter", {
     if (isQueensideCastle) {
       const fromSquare = move.color === "b" ? "a8" : "a1";
       const toSquare = move.color === "b" ? "d8" : "d1";
-      const rook = this.getPieceFromSquare(fromSquare);
+      const rook = PositioningUtils.getPieceFromSquare(fromSquare);
       this.moveTo(rook, toSquare);
     }
     if (isKingsideCastle) {
       const fromSquare = move.color === "b" ? "h8" : "h1";
       const toSquare = move.color === "b" ? "f8" : "f1";
-      const rook = this.getPieceFromSquare(fromSquare);
+      const rook = PositioningUtils.getPieceFromSquare(fromSquare);
       this.moveTo(rook, toSquare);
     }
     if (isEnPassant) {
@@ -220,6 +264,26 @@ AFRAME.registerSystem("chess-arbiter", {
         this.squarePromoted(square);
       }, 750);
     }
+  },
+
+  squarePromoted(square) {
+    const chessSet = document.querySelector("[chess-set]");
+    const oldPiece = PositioningUtils.getPieceFromSquare(square);
+    const color = oldPiece.metadata.color;
+    const initialSquare = oldPiece.metadata.initialSquare;
+    window.NAF.connection.broadcastData("removePiece", { id: oldPiece.id, color });
+    this.el.sceneEl.emit("removePiece", { id: oldPiece.id, color });
+    oldPiece.parentNode.removeChild(oldPiece);
+    const newMeta = {
+      type: "q",
+      color,
+      initialSquare,
+      model: color === "w" ? chessSet.queenW : chessSet.queenB,
+      sendTo: square
+    };
+    const newPiece = document.createElement("a-entity");
+    newPiece.setAttribute("chess-piece", newMeta);
+    chessSet.appendChild(newPiece);
   },
 
   teleportPlayer(color) {
@@ -284,14 +348,14 @@ AFRAME.registerSystem("chess-arbiter", {
   },
 
   destroyMyPieces() {
-    const chessSets = document.querySelectorAll('a-entity[chess-set]');
+    const chessSets = document.querySelectorAll("a-entity[chess-set]");
     for (const set of chessSets) {
       for (const child of set.children) {
         window.NAF.utils.takeOwnership(child);
-        set.removeChild(child)
+        set.removeChild(child);
       }
       window.NAF.utils.takeOwnership(set);
-      set.parentNode.removeChild(set)
+      set.parentNode.removeChild(set);
     }
-	},
+  }
 });

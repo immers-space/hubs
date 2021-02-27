@@ -19,6 +19,8 @@ AFRAME.registerComponent("chess-set", {
   init() {
     this.detectGame();
     this.buildSet(this.data.color);
+    this.el.queenB = queenB;
+    this.el.queenW = queenW;
   },
 
   detectGame() {
@@ -93,7 +95,7 @@ AFRAME.registerComponent("chess-set", {
       const pieceMeta = `type: ${piece.type}; color: ${piece.color}; initialSquare: ${piece.initialSquare}; model: ${
         piece.model
       };`;
-      const tempPiece = window.document.createElement("a-entity");
+      const tempPiece = document.createElement("a-entity");
       tempPiece.setAttribute("chess-piece", pieceMeta);
       this.el.appendChild(tempPiece);
     });

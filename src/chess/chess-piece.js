@@ -14,7 +14,8 @@ AFRAME.registerComponent("chess-piece", {
     currentPosition: { default: "" },
     moves: { default: [] },
     wasHeld: { default: false },
-    pieceY: { default: 0 }
+    pieceY: { default: 0 },
+    sendTo: { default: "" }
   },
 
   init() {
@@ -59,13 +60,13 @@ AFRAME.registerComponent("chess-piece", {
     );
     const pieceScale = this.squareSize / this.scaleDefault;
     entity.setAttribute("scale", `${pieceScale} ${pieceScale} ${pieceScale}`);
-    const file = this.data.initialSquare.substr(0, 1);
-    const rank = this.data.initialSquare.substr(1, 1);
+    const file = this.data.sendTo ? this.data.sendTo.substr(0, 1) : this.data.initialSquare.substr(0, 1);
+    const rank = this.data.sendTo ? this.data.sendTo.substr(1, 1) : this.data.initialSquare.substr(1, 1);
     const pieceX = PositioningUtils.getPositionFromFile(file);
     const pieceZ = PositioningUtils.getPositionFromRank(rank);
     this.data.lastPosition = entity.getAttribute("position");
     this.data.currentPosition = entity.getAttribute("position");
-    this.data.lastSquare = this.data.initialSquare;
+    this.data.lastSquare = this.data.sendTo ? this.data.sendTo : this.data.initialSquare;
     this.data.moves = [];
     this.data.wasHeld = false;
     this.data.pieceY = this.pieceY + this.yCorrections[this.data.type];
