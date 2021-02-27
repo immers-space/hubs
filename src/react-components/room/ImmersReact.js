@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import classNames from "classnames";
 import { getMessageComponent } from "./ChatSidebar";
@@ -65,3 +65,37 @@ export function ImmerImageIcon({ src }) {
 ImmerImageIcon.propTypes = {
   src: PropTypes.string
 };
+
+export function ImmerMoreHistoryButton() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  useEffect(
+    () => {
+      const onMoreHistory = evt => {
+        setIsLoading(false);
+        setHasMore(evt.detail);
+      };
+      window.addEventListener("immers-more-history-loaded", onMoreHistory);
+      return () => window.removeEventListener("immers-more-history-loaded", onMoreHistory);
+    },
+    [setIsLoading, setHasMore]
+  );
+  const handleClick = evt => {
+    evt.preventDefault();
+    setIsLoading(true);
+    window.dispatchEvent(new CustomEvent("immers-load-more-history"));
+  };
+  return (
+    hasMore && (
+      <div className={styles.historyButton}>
+        {isLoading ? (
+          <span>Loading...</span>
+        ) : (
+          <a onClick={handleClick} href="#">
+            Load more
+          </a>
+        )}
+      </div>
+    )
+  );
+}

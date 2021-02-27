@@ -15,7 +15,7 @@ import { useMaintainScrollPosition } from "../misc/useMaintainScrollPosition";
 import { spawnChatMessage } from "../chat-message";
 import { discordBridgesForPresences } from "../../utils/phoenix-utils";
 import { useIntl } from "react-intl";
-import { ImmerChatMessage } from "./ImmersReact";
+import { ImmerChatMessage, ImmerMoreHistoryButton } from "./ImmersReact";
 
 const ChatContext = createContext({ messageGroups: [], sendMessage: () => {} });
 
@@ -274,6 +274,7 @@ export function ChatSidebarContainer({ scene, canSpawnMessages, presences, occup
   return (
     <ChatSidebar onClose={onClose}>
       <ChatMessageList ref={listRef} onScroll={onScrollList}>
+        <ImmerMoreHistoryButton />
         {messageGroups.map(({ id, systemMessage, isImmersFeed, ...rest }) => {
           if (systemMessage) {
             return <SystemMessage key={id} {...rest} />;

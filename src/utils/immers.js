@@ -384,19 +384,19 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
   immerSocket.on("friends-update", updateFriends);
   // news feed
   const updateFeed = async () => {
-    const inboxItems = await activities.inboxAsChat();
-    inboxItems.forEach(detail => {
+    const { messages, more } = await activities.feedAsChat();
+    messages.forEach(detail => {
       messageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
     });
+    return more;
   };
   updateFeed();
-  const updateOutboxFeed = async () => {
-    const inboxItems = await activities.outboxAsChat();
-    inboxItems.forEach(detail => {
-      messageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
-    });
-  };
-  updateOutboxFeed();
+  window.addEventListener("immers-load-more-history", async () => {
+    const more = await updateFeed();
+    window.dispatchEvent(new CustomEvent("immers-more-history-loaded", { detail: more }));
+  });
+
+  // stream new activity while in room
   immerSocket.on("inbox-update", activity => {
     activity = JSON.parse(activity);
     if (activity.type === "Create") {
@@ -448,7 +448,7 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
 
   // chat integration
   messageDispatch.addEventListener("message", ({ detail: message }) => {
-    // check if it was sent by me
+    // check if it was sent by me or loaded from history
     if (!message.sent || message.isImmersFeed) {
       return;
     }

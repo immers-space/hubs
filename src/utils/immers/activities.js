@@ -8,6 +8,7 @@ export default class Activities {
     this.actor = null;
     this.place = null;
     this.nextInboxPage = null;
+    this.nextOutboxPage = null;
   }
 
   trustedIRI(IRI) {
@@ -31,36 +32,59 @@ export default class Activities {
   }
 
   async inbox() {
-    const col = await this.getObject(this.actor.inbox);
-    if (!col.orderedItems && col.first) {
-      return this.getObject(col.first);
+    let col;
+    if (this.nextInboxPage === null) {
+      col = await this.getObject(this.actor.inbox);
+      if (!col.orderedItems && col.first) {
+        col = await this.getObject(col.first);
+      }
+      this.nextInboxPage = col.next;
+    } else if (this.nextInboxPage) {
+      col = await this.getObject(this.nextInboxPage);
+      this.nextInboxPage = col.next;
     }
     return col;
   }
+
   async outbox() {
-    const col = await this.getObject(this.actor.outbox);
-    if (!col.orderedItems && col.first) {
-      return this.getObject(col.first);
+    let col;
+    if (this.nextOutboxPage === null) {
+      col = await this.getObject(this.actor.outbox);
+      if (!col.orderedItems && col.first) {
+        col = await this.getObject(col.first);
+      }
+      this.nextOutboxPage = col.next;
+    } else if (this.nextOutboxPage) {
+      col = await this.getObject(this.nextOutboxPage);
+      this.nextOutboxPage = col.next;
     }
     return col;
   }
 
   async inboxAsChat() {
     const inbox = await this.inbox();
-    if (!inbox.orderedItems) {
+    if (!inbox?.orderedItems) {
       return [];
     }
     return inbox.orderedItems.filter(activity => activity.type === "Create").map(act => Activities.ActivityAsChat(act));
   }
 
   async outboxAsChat() {
-    const inbox = await this.outbox();
-    if (!inbox.orderedItems) {
+    const outbox = await this.outbox();
+    if (!outbox?.orderedItems) {
       return [];
     }
-    return inbox.orderedItems
+    return outbox.orderedItems
       .filter(activity => activity.type === "Create")
       .map(act => Activities.ActivityAsChat(act, true));
+  }
+
+  async feedAsChat() {
+    const messages = (await this.inboxAsChat()).concat(await this.outboxAsChat());
+    return {
+      messages,
+      more: this.nextOutboxPage || this.nextInboxPage
+    };
   }
 
   postActivity(activity) {
