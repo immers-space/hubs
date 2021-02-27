@@ -21,6 +21,10 @@ AFRAME.registerSystem("chess-arbiter", {
     this.addEventListeners();
   },
 
+  remove() {
+    this.removeEventListeners();
+  },
+
   tick() {
     if (this.state.imPlaying) {
       const pieces = this.sceneEl.querySelectorAll("a-entity[chess-set] a-entity[chess-piece] a-entity.chess-piece");
@@ -40,6 +44,8 @@ AFRAME.registerSystem("chess-arbiter", {
 
   removeEventListeners() {
     this.el.sceneEl.removeEventListener("chess:playAs", this.playAsEvent);
+    this.el.sceneEl.removeEventListener("chess:copyPGN", this.copyPGN);
+    this.el.sceneEl.removeEventListener("chess:copyFEN", this.copyFEN);
   },
 
   playAsEvent(ev) {
