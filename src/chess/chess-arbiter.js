@@ -28,8 +28,8 @@ AFRAME.registerSystem("chess-arbiter", {
   },
 
   startGame() {
-		this.chessEngine = new Chess();
-	},
+    this.chessEngine = new Chess();
+  },
 
   resetGame() {
     document.body.removeEventListener("clientConnected", this.announceCurrentPlayer);
@@ -63,6 +63,9 @@ AFRAME.registerSystem("chess-arbiter", {
   },
 
   playAs(color, id, profile) {
+    if (!this.chessGame) {
+      this.chessGame = this.sceneEl.querySelector("a-entity[chess-game]");
+    }
     const colorAvailable = !this.state.players[color].id;
     if (colorAvailable) {
       this.sceneEl.emit("imPlaying", { color, id, profile });
@@ -292,6 +295,6 @@ AFRAME.registerSystem("chess-arbiter", {
       }
       window.NAF.utils.takeOwnership(set);
       set.parentNode.removeChild(set)
-    }
+  }
 	},
 });
