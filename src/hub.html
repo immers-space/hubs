@@ -1357,6 +1357,14 @@
         </a-entity>
         <a-entity id="scene-preview-node">
         </a-entity>
+        <!-- <a-entity 
+            chess-game="squareSize: 6; hideBoard: true; yCorrections: 0.25 -0.5 -1.15 -1.3 -2.2 -2.5; teleportPlayers: true;"
+            position="-44.5 1.5 -10.6"
+            networked="template: #static-game-avatar"
+        ></a-entity> -->
+        <a-entity chess-score-pad chess-notation-controls position="-50.5 18 -10.6" rotation="0 180 0"></a-entity>
+        <a-entity chess-game-status position="-50.5 19.75 -10.6" rotation="0 180 0"></a-entity>
+        <a-box color="#c0c" depth="0.3" height="0.3" width="0.3" position="-48.5 18 -10.6" chess-game-controls></a-box>
     </a-scene>
 
     <div id="ui-root"></div>

@@ -229,6 +229,11 @@ import "./chess/chess-board";
 import "./chess/chess-set";
 import "./chess/chess-piece";
 import "./chess/chess-cursor";
+import "./chess/chess-score-pad";
+import "./chess/ascii-board";
+import "./chess/chess-game-status";
+import "./chess/chess-game-controls";
+import "./chess/chess-notation-controls";
 
 const PHOENIX_RELIABLE_NAF = "phx-reliable";
 NAF.options.firstSyncSource = PHOENIX_RELIABLE_NAF;
