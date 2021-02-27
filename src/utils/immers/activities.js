@@ -43,18 +43,35 @@ export default class Activities {
     if (!inbox.orderedItems) {
       return [];
     }
-    return inbox.orderedItems.filter(activity => activity.object?.content).map(activity => ({
-      isImmersFeed: true,
-      sent: false,
-      type: "chat",
-      body: activity.object.content,
-      context: activity.object.context,
-      timestamp: new Date(activity.published).getTime(),
-      name: activity.actor.name,
-      sessionId: activity.actor.id,
-      icon: activity.actor.icon,
-      immer: new URL(activity.actor.id).hostname
-    }));
+    return inbox.orderedItems.filter(activity => activity.type === "Create").map(activity => {
+      const message = {
+        isImmersFeed: true,
+        sent: false,
+        // type: "chat",
+        // body: activity.object.content,
+        context: activity.object.context,
+        timestamp: new Date(activity.published).getTime(),
+        name: activity.actor.name,
+        sessionId: activity.actor.id,
+        icon: activity.actor.icon,
+        immer: new URL(activity.actor.id).hostname
+      };
+      switch (activity.object.type) {
+        case "Note":
+          message.type = "chat";
+          message.body = activity.object.content;
+          break;
+        case "Image":
+          message.type = "photo";
+          message.body = { src: activity.object.url };
+          break;
+        case "Video":
+          message.type = "video";
+          message.body = { src: activity.object.url };
+          break;
+      }
+      return message;
+    });
   }
 
   postActivity(activity) {
@@ -75,6 +92,38 @@ export default class Activities {
     const obj = {
       content,
       type: "Note",
+      attributedTo: this.actor.id,
+      context: this.place,
+      to: [this.actor.followers]
+    };
+    if (summary) {
+      obj.summary = summary;
+    }
+    if (isPublic) {
+      obj.to.push(Activities.PublicAddress);
+    }
+    return this.postActivity(obj);
+  }
+  image(url, isPublic, summary) {
+    const obj = {
+      url,
+      type: "Image",
+      attributedTo: this.actor.id,
+      context: this.place,
+      to: [this.actor.followers]
+    };
+    if (summary) {
+      obj.summary = summary;
+    }
+    if (isPublic) {
+      obj.to.push(Activities.PublicAddress);
+    }
+    return this.postActivity(obj);
+  }
+  video(url, isPublic, summary) {
+    const obj = {
+      url,
+      type: "Video",
       attributedTo: this.actor.id,
       context: this.place,
       to: [this.actor.followers]

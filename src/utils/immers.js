@@ -443,6 +443,13 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
       case "chat":
         task = activities.note(message.body, true, null);
         break;
+      case "image":
+      case "photo":
+        task = activities.image(message.body.src, true, null);
+        break;
+      case "video":
+        task = activities.video(message.body.src, true, null);
+        break;
       default:
         console.log("Chat message not shared", message);
     }
