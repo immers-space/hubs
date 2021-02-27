@@ -9,6 +9,8 @@ export default class Activities {
     this.place = null;
     this.nextInboxPage = null;
     this.nextOutboxPage = null;
+    this.inboxStartDate = new Date();
+    this.outboxStartDate = this.inboxStartDate;
   }
 
   trustedIRI(IRI) {
@@ -38,11 +40,10 @@ export default class Activities {
       if (!col.orderedItems && col.first) {
         col = await this.getObject(col.first);
       }
-      this.nextInboxPage = col.next;
     } else if (this.nextInboxPage) {
       col = await this.getObject(this.nextInboxPage);
-      this.nextInboxPage = col.next;
     }
+    this.nextInboxPage = col?.next;
     return col;
   }
 
@@ -53,27 +54,28 @@ export default class Activities {
       if (!col.orderedItems && col.first) {
         col = await this.getObject(col.first);
       }
-      this.nextOutboxPage = col.next;
     } else if (this.nextOutboxPage) {
       col = await this.getObject(this.nextOutboxPage);
-      this.nextOutboxPage = col.next;
     }
+    this.nextOutboxPage = col?.next;
     return col;
   }
 
   async inboxAsChat() {
     const inbox = await this.inbox();
-    if (!inbox?.orderedItems) {
+    if (!inbox?.orderedItems?.length) {
       return [];
     }
+    this.inboxStartDate = new Date(inbox.orderedItems[inbox.orderedItems.length - 1].published);
     return inbox.orderedItems.filter(activity => activity.type === "Create").map(act => Activities.ActivityAsChat(act));
   }
 
   async outboxAsChat() {
     const outbox = await this.outbox();
-    if (!outbox?.orderedItems) {
+    if (!outbox?.orderedItems?.length) {
       return [];
     }
+    this.outboxStartDate = new Date(outbox.orderedItems[outbox.orderedItems.length - 1].published);
     return outbox.orderedItems
       .filter(activity => activity.type === "Create")
       .map(act => Activities.ActivityAsChat(act, true));
@@ -81,6 +83,16 @@ export default class Activities {
 
   async feedAsChat() {
     const messages = (await this.inboxAsChat()).concat(await this.outboxAsChat());
+    // try to balance amount of time covered by inbox & outbox feeds
+    if (this.inboxStartDate > this.outboxStartDate) {
+      while (this.inboxStartDate > this.outboxStartDate && this.nextInboxPage) {
+        messages.push(...(await this.inboxAsChat()));
+      }
+    } else {
+      while (this.outboxStartDate > this.inboxStartDate && this.nextOutboxPage) {
+        messages.push(...(await this.outboxAsChat()));
+      }
+    }
     return {
       messages,
       more: this.nextOutboxPage || this.nextInboxPage
