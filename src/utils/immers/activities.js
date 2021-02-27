@@ -60,13 +60,13 @@ export default class Activities {
     });
   }
 
-  note(content, isPublic, summary) {
+  note(content, to, isPublic, summary) {
     const obj = {
       content,
       type: "Note",
       attributedTo: this.actor.id,
       context: this.place,
-      to: [this.actor.followers]
+      to: [this.actor.followers, ...to]
     };
     if (summary) {
       obj.summary = summary;
@@ -76,13 +76,14 @@ export default class Activities {
     }
     return this.postActivity(obj);
   }
-  image(url, isPublic, summary) {
+
+  image(url, to, isPublic, summary) {
     const obj = {
       url,
       type: "Image",
       attributedTo: this.actor.id,
       context: this.place,
-      to: [this.actor.followers]
+      to: [this.actor.followers, ...to]
     };
     if (summary) {
       obj.summary = summary;
@@ -92,13 +93,14 @@ export default class Activities {
     }
     return this.postActivity(obj);
   }
-  video(url, isPublic, summary) {
+
+  video(url, to, isPublic, summary) {
     const obj = {
       url,
       type: "Video",
       attributedTo: this.actor.id,
       context: this.place,
-      to: [this.actor.followers]
+      to: [this.actor.followers, ...to]
     };
     if (summary) {
       obj.summary = summary;

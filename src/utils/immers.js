@@ -445,18 +445,21 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
     if (!message.sent) {
       return;
     }
+    const localAudience = Object.values(window.APP.hubChannel.presence.state)
+      .map(presence => presence.metas[presence.metas.length - 1]?.profile.id)
+      .filter(id => id && id !== actorObj.id);
     // send activity
     let task;
     switch (message.type) {
       case "chat":
-        task = activities.note(message.body, true, null);
+        task = activities.note(message.body, localAudience, true, null);
         break;
       case "image":
       case "photo":
-        task = activities.image(message.body.src, true, null);
+        task = activities.image(message.body.src, localAudience, true, null);
         break;
       case "video":
-        task = activities.video(message.body.src, true, null);
+        task = activities.video(message.body.src, localAudience, true, null);
         break;
       default:
         console.log("Chat message not shared", message);

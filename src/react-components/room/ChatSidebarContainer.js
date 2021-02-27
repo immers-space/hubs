@@ -61,6 +61,10 @@ function processChatMessage(messageGroups, newMessage) {
     });
     return newMessageGroups;
   }
+  // local chat is ignored in favor of immers feed which includes it
+  if (!sent) {
+    return messageGroups;
+  }
   if (shouldCreateNewMessageGroup(messageGroups, newMessage, now)) {
     return [
       ...messageGroups,
