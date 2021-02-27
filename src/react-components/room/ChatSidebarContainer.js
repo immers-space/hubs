@@ -51,7 +51,7 @@ function processChatMessage(messageGroups, newMessage) {
       id: uniqueMessageId++,
       isImmersFeed: messageProps.isImmersFeed,
       timestamp: messageProps.timestamp,
-      sent: false,
+      sent: sent,
       sender: name,
       icon: messageProps.icon,
       senderSessionId: sessionId,

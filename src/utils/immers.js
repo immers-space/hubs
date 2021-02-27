@@ -390,6 +390,13 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
     });
   };
   updateFeed();
+  const updateOutboxFeed = async () => {
+    const inboxItems = await activities.outboxAsChat();
+    inboxItems.forEach(detail => {
+      messageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
+    });
+  };
+  updateOutboxFeed();
   immerSocket.on("inbox-update", activity => {
     activity = JSON.parse(activity);
     if (activity.type === "Create") {
@@ -442,7 +449,7 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
   // chat integration
   messageDispatch.addEventListener("message", ({ detail: message }) => {
     // check if it was sent by me
-    if (!message.sent) {
+    if (!message.sent || message.isImmersFeed) {
       return;
     }
     const localAudience = Object.values(window.APP.hubChannel.presence.state)

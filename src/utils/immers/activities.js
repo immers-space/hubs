@@ -37,13 +37,30 @@ export default class Activities {
     }
     return col;
   }
+  async outbox() {
+    const col = await this.getObject(this.actor.outbox);
+    if (!col.orderedItems && col.first) {
+      return this.getObject(col.first);
+    }
+    return col;
+  }
 
   async inboxAsChat() {
     const inbox = await this.inbox();
     if (!inbox.orderedItems) {
       return [];
     }
-    return inbox.orderedItems.filter(activity => activity.type === "Create").map(Activities.ActivityAsChat);
+    return inbox.orderedItems.filter(activity => activity.type === "Create").map(act => Activities.ActivityAsChat(act));
+  }
+
+  async outboxAsChat() {
+    const inbox = await this.outbox();
+    if (!inbox.orderedItems) {
+      return [];
+    }
+    return inbox.orderedItems
+      .filter(activity => activity.type === "Create")
+      .map(act => Activities.ActivityAsChat(act, true));
   }
 
   postActivity(activity) {
@@ -111,10 +128,10 @@ export default class Activities {
     return this.postActivity(obj);
   }
 
-  static ActivityAsChat(activity) {
+  static ActivityAsChat(activity, outbox = false) {
     const message = {
       isImmersFeed: true,
-      sent: false,
+      sent: outbox,
       context: activity.object.context,
       timestamp: new Date(activity.published).getTime(),
       name: activity.actor.name,

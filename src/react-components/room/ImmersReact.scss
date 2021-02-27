@@ -17,3 +17,27 @@
 :local(.immer-chat-label) {
   align-items: center;
 }
+
+:local(.sent) {
+  :local(.message-group-label) {
+    align-self: flex-end;
+  }
+
+  :local(.message-bubble) {
+    background-color: theme.$blue;
+    color: theme.$white;
+    align-self: flex-end;
+
+    a {
+      color: theme.$white;
+
+      &:hover {
+        color: theme.$white-hover;
+      }
+
+      &:active {
+        color: theme.$white-pressed;
+      }
+    }
+  }
+}
