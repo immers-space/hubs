@@ -52,7 +52,7 @@ export function ImmersChatMessage({ sent, sender, timestamp, isFriend, icon, imm
     <li className={classNames(chatStyles.messageGroup, { [chatStyles.sent]: sent })}>
       <p className={classNames(chatStyles.messageGroupLabel, styles.immerChatLabel)}>
         {isFriend && <ImmersFriendIcon />}
-        {icon && <ImmersImageIcon src={icon} />}
+        {icon && <ImmersAvatarIcon avi={icon} />}
         {sender}
         <span className={styles.immerName}>[{immer}]</span>&nbsp;|&nbsp;<ImmerLink place={context} />&nbsp;|{" "}
         <FormattedRelativeTime updateIntervalInSeconds={10} value={(timestamp - Date.now()) / 1000} />
@@ -88,6 +88,15 @@ ImmersImageIcon.propTypes = {
 export function ImmersFriendIcon() {
   return <ImmersImageIcon src={immersLogo} title={"Immers Space Friend"} />;
 }
+
+export function ImmersAvatarIcon({ avi }) {
+  // support both Image objects & direct url
+  const src = avi.url || avi;
+  return <ImmersImageIcon src={src} />;
+}
+ImmersAvatarIcon.propTypes = {
+  avi: PropTypes.any
+};
 
 export function ImmersMoreHistoryButton() {
   const [isLoading, setIsLoading] = useState(false);

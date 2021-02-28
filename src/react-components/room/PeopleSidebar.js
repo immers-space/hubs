@@ -14,7 +14,7 @@ import { ReactComponent as VolumeHighIcon } from "../icons/VolumeHigh.svg";
 import { ReactComponent as VolumeMutedIcon } from "../icons/VolumeMuted.svg";
 import { List, ButtonListItem } from "../layout/List";
 import { FormattedMessage, useIntl } from "react-intl";
-import { ImmerLink, ImmersImageIcon, ImmersFriendIcon } from "./ImmersReact";
+import { ImmerLink, ImmersAvatarIcon, ImmersFriendIcon } from "./ImmersReact";
 
 function getDeviceLabel(ctx, intl) {
   if (ctx) {
@@ -146,7 +146,7 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
               {person.friendStatus && <ImmersFriendIcon />}
               {!person.remote && <DeviceIcon title={getDeviceLabel(person.context, intl)} />}
               {person.remote ? (
-                <ImmersImageIcon src={person.friendStatus.actor.icon} />
+                <ImmersAvatarIcon avi={person.friendStatus.actor.icon} />
               ) : (
                 !person.context.discord &&
                 !person.remote &&

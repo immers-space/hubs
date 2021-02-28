@@ -129,7 +129,11 @@ export async function createAvatar(actorObj, hubsAvatarId) {
     generator: place
   };
   if (hubsAvatar.files.thumbnail) {
-    immersAvatar.icon = hubsAvatar.files.thumbnail;
+    immersAvatar.icon = {
+      type: "Image",
+      mediaType: "image/png",
+      url: hubsAvatar.files.thumbnail
+    };
   }
   if (hubsAvatar.attributions) {
     immersAvatar.attributedTo = Object.values(hubsAvatar.attributions).map(name => ({
