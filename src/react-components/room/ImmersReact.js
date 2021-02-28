@@ -51,7 +51,7 @@ export function ImmerChatMessage({ sent, sender, timestamp, isFriend, icon, imme
   return (
     <li className={classNames(chatStyles.messageGroup, { [chatStyles.sent]: sent })}>
       <p className={classNames(chatStyles.messageGroupLabel, styles.immerChatLabel)}>
-        {isFriend && <ImmerImageIcon src={immersLogo} />}
+        {isFriend && <ImmersFriendIcon />}
         {icon && <ImmerImageIcon src={icon} />}
         {sender}
         <span className={styles.immerName}>[{immer}]</span>&nbsp;|&nbsp;<ImmerLink place={context} />&nbsp;|{" "}
@@ -73,16 +73,21 @@ ImmerChatMessage.propTypes = {
   context: PropTypes.object
 };
 
-export function ImmerImageIcon({ src }) {
+export function ImmerImageIcon({ src, title }) {
   return (
     <span className={styles.imageIconWrapper}>
-      {src && <img className={styles.imageIcon} src={proxiedUrlFor(src)} />}
+      {src && <img className={styles.imageIcon} src={proxiedUrlFor(src)} title={title} />}
     </span>
   );
 }
 ImmerImageIcon.propTypes = {
-  src: PropTypes.string
+  src: PropTypes.string,
+  title: PropTypes.string
 };
+
+export function ImmersFriendIcon() {
+  return <ImmerImageIcon src={immersLogo} title={"Immers Space Friend"} />;
+}
 
 export function ImmerMoreHistoryButton() {
   const [isLoading, setIsLoading] = useState(false);

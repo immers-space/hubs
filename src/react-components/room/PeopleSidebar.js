@@ -12,11 +12,9 @@ import { ReactComponent as VRIcon } from "../icons/VR.svg";
 import { ReactComponent as VolumeOffIcon } from "../icons/VolumeOff.svg";
 import { ReactComponent as VolumeHighIcon } from "../icons/VolumeHigh.svg";
 import { ReactComponent as VolumeMutedIcon } from "../icons/VolumeMuted.svg";
-import immersLogo from "../../assets/images/immers_logo.png";
 import { List, ButtonListItem } from "../layout/List";
 import { FormattedMessage, useIntl } from "react-intl";
-import { proxiedUrlFor } from "../../utils/media-url-utils";
-import { ImmerLink } from "./ImmersReact";
+import { ImmerLink, ImmerImageIcon, ImmersFriendIcon } from "./ImmersReact";
 
 function getDeviceLabel(ctx, intl) {
   if (ctx) {
@@ -100,14 +98,6 @@ function getLocationMessage(activity, myHandle, intl) {
   }
 }
 
-function imageIcon(src) {
-  return (
-    <span className={styles.imageIconWrapper}>
-      {src && <img className={styles.imageIcon} src={proxiedUrlFor(src)} />}
-    </span>
-  );
-}
-
 function getPersonName(person, intl) {
   const you = intl.formatMessage({
     id: "people-sidebar.person-name.you",
@@ -153,12 +143,15 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
               onClick={e => onSelectPerson(person, e)}
               disabled={person.remote}
             >
-              {person.remote ? imageIcon(immersLogo) : <DeviceIcon title={getDeviceLabel(person.context, intl)} />}
-              {person.remote
-                ? imageIcon(person.friendStatus.actor.icon)
-                : !person.context.discord &&
-                  !person.remote &&
-                  VoiceIcon && <VoiceIcon title={getVoiceLabel(person.micPresence, intl)} />}
+              {person.friendStatus && <ImmersFriendIcon />}
+              {!person.remote && <DeviceIcon title={getDeviceLabel(person.context, intl)} />}
+              {person.remote ? (
+                <ImmerImageIcon src={person.friendStatus.actor.icon} />
+              ) : (
+                !person.context.discord &&
+                !person.remote &&
+                VoiceIcon && <VoiceIcon title={getVoiceLabel(person.micPresence, intl)} />
+              )}
               <p>{getPersonName(person, intl)}</p>
               {person.roles.owner && (
                 <StarIcon
