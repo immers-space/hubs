@@ -16,21 +16,28 @@ export function ImmerLink({ place }) {
   // inject user handle into desintation url so they don't have to type it
   try {
     const url = new URL(placeUrl);
-    const search = new URLSearchParams(url.search);
-    search.set("me", window.APP.store.state.profile.handle);
-    url.search = search.toString();
-    placeUrl = url.toString();
+    if (
+      `${url.host}${url.pathname}${url.search}` ===
+      `${window.location.host}${window.location.pathname}${window.location.search}`
+    ) {
+      placeUrl = null;
+    } else {
+      const search = new URLSearchParams(url.search);
+      search.set("me", window.APP.store.state.profile.handle);
+      url.search = search.toString();
+      placeUrl = url.toString();
+    }
   } catch (ignore) {
     /* if fail, leave original url unchanged */
   }
-  return <a href={placeUrl}>{place.name ?? "unkown"}</a>;
+  return placeUrl ? <a href={placeUrl}>{place.name ?? "unkown"}</a> : "here";
 }
 
 ImmerLink.propTypes = {
   place: PropTypes.object
 };
 
-export function ImmerChatMessage({ sent, sender, timestamp, icon, immer, context, messages }) {
+export function ImmerChatMessage({ sent, sender, timestamp, isFriend, icon, immer, context, messages }) {
   if (messages[0].type === "activity") {
     return (
       <li className={classNames(chatStyles.messageGroup, { [chatStyles.sent]: sent })}>
@@ -44,7 +51,7 @@ export function ImmerChatMessage({ sent, sender, timestamp, icon, immer, context
   return (
     <li className={classNames(chatStyles.messageGroup, { [chatStyles.sent]: sent })}>
       <p className={classNames(chatStyles.messageGroupLabel, styles.immerChatLabel)}>
-        <ImmerImageIcon src={immersLogo} />
+        {isFriend && <ImmerImageIcon src={immersLogo} />}
         {icon && <ImmerImageIcon src={icon} />}
         {sender}
         <span className={styles.immerName}>[{immer}]</span>&nbsp;|&nbsp;<ImmerLink place={context} />&nbsp;|{" "}
@@ -62,6 +69,7 @@ ImmerChatMessage.propTypes = {
   messages: PropTypes.array,
   immer: PropTypes.string,
   icon: PropTypes.string,
+  isFriend: PropTypes.bool,
   context: PropTypes.object
 };
 

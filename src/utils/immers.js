@@ -361,6 +361,7 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
     if (store.state.profile.id) {
       const profile = store.state.profile;
       friendsCol = await getFriends(profile);
+      activities.friends = friendsCol.orderedItems;
       remountUI({ friends: friendsCol.orderedItems, handle: profile.handle });
       // update follow button for new friends
       const players = window.APP.componentRegistry["player-info"];
@@ -393,7 +394,7 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
   immerSocket.on("inbox-update", activity => {
     activity = JSON.parse(activity);
     if (activity.type === "Create") {
-      const detail = Activities.ActivityAsChat(activity);
+      const detail = activities.activityAsChat(activity);
       messageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
     }
   });

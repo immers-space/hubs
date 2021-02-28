@@ -11,6 +11,7 @@ export default class Activities {
     this.nextOutboxPage = null;
     this.inboxStartDate = new Date();
     this.outboxStartDate = this.inboxStartDate;
+    this.friends = [];
   }
 
   trustedIRI(IRI) {
@@ -67,7 +68,7 @@ export default class Activities {
       return [];
     }
     this.inboxStartDate = new Date(inbox.orderedItems[inbox.orderedItems.length - 1].published);
-    return inbox.orderedItems.map(act => Activities.ActivityAsChat(act)).filter(message => message.body);
+    return inbox.orderedItems.map(act => this.activityAsChat(act)).filter(message => message.body);
   }
 
   async outboxAsChat() {
@@ -76,7 +77,7 @@ export default class Activities {
       return [];
     }
     this.outboxStartDate = new Date(outbox.orderedItems[outbox.orderedItems.length - 1].published);
-    return outbox.orderedItems.map(act => Activities.ActivityAsChat(act, true)).filter(message => message.body);
+    return outbox.orderedItems.map(act => this.activityAsChat(act, true)).filter(message => message.body);
   }
 
   async feedAsChat() {
@@ -162,9 +163,10 @@ export default class Activities {
     return this.postActivity(obj);
   }
 
-  static ActivityAsChat(activity, outbox = false) {
+  activityAsChat(activity, outbox = false) {
     const message = {
       isImmersFeed: true,
+      isFriend: this.friends.some(status => status.actor.id === activity.actor.id),
       sent: outbox,
       context: activity.object?.context,
       timestamp: new Date(activity.published).getTime(),

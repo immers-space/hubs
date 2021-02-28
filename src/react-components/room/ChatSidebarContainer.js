@@ -50,6 +50,7 @@ function processChatMessage(messageGroups, newMessage) {
     newMessageGroups.splice(i === -1 ? newMessageGroups.length : i, 0, {
       id: uniqueMessageId++,
       isImmersFeed: messageProps.isImmersFeed,
+      isFriend: messageProps.isFriend,
       timestamp: messageProps.timestamp,
       sent: sent,
       sender: name,
