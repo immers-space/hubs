@@ -37,7 +37,7 @@ ImmerLink.propTypes = {
   place: PropTypes.object
 };
 
-export function ImmerChatMessage({ sent, sender, timestamp, isFriend, icon, immer, context, messages }) {
+export function ImmersChatMessage({ sent, sender, timestamp, isFriend, icon, immer, context, messages }) {
   if (messages[0].type === "activity") {
     return (
       <li className={classNames(chatStyles.messageGroup, { [chatStyles.sent]: sent })}>
@@ -52,7 +52,7 @@ export function ImmerChatMessage({ sent, sender, timestamp, isFriend, icon, imme
     <li className={classNames(chatStyles.messageGroup, { [chatStyles.sent]: sent })}>
       <p className={classNames(chatStyles.messageGroupLabel, styles.immerChatLabel)}>
         {isFriend && <ImmersFriendIcon />}
-        {icon && <ImmerImageIcon src={icon} />}
+        {icon && <ImmersImageIcon src={icon} />}
         {sender}
         <span className={styles.immerName}>[{immer}]</span>&nbsp;|&nbsp;<ImmerLink place={context} />&nbsp;|{" "}
         <FormattedRelativeTime updateIntervalInSeconds={10} value={(timestamp - Date.now()) / 1000} />
@@ -62,7 +62,7 @@ export function ImmerChatMessage({ sent, sender, timestamp, isFriend, icon, imme
   );
 }
 
-ImmerChatMessage.propTypes = {
+ImmersChatMessage.propTypes = {
   sent: PropTypes.bool,
   sender: PropTypes.string,
   timestamp: PropTypes.any,
@@ -73,23 +73,23 @@ ImmerChatMessage.propTypes = {
   context: PropTypes.object
 };
 
-export function ImmerImageIcon({ src, title }) {
+export function ImmersImageIcon({ src, title }) {
   return (
     <span className={styles.imageIconWrapper}>
       {src && <img className={styles.imageIcon} src={proxiedUrlFor(src)} title={title} />}
     </span>
   );
 }
-ImmerImageIcon.propTypes = {
+ImmersImageIcon.propTypes = {
   src: PropTypes.string,
   title: PropTypes.string
 };
 
 export function ImmersFriendIcon() {
-  return <ImmerImageIcon src={immersLogo} title={"Immers Space Friend"} />;
+  return <ImmersImageIcon src={immersLogo} title={"Immers Space Friend"} />;
 }
 
-export function ImmerMoreHistoryButton() {
+export function ImmersMoreHistoryButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   useEffect(
