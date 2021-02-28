@@ -112,6 +112,7 @@ function updateMessageGroups(messageGroups, newMessage) {
     case "image":
     case "photo":
     case "video":
+    case "activity":
       return processChatMessage(messageGroups, newMessage);
     default:
       return messageGroups;

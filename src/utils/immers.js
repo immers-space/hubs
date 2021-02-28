@@ -109,16 +109,8 @@ export function arrive(actorObj) {
     type: "Arrive",
     actor: actorObj.id,
     target: place,
-    to: actorObj.followers
-  });
-}
-
-export function leave(actorObj) {
-  return postActivity(actorObj.outbox, {
-    type: "Leave",
-    actor: actorObj.id,
-    target: place,
-    to: actorObj.followers
+    to: actorObj.followers,
+    summary: `${actorObj.name} arrived at ${place.name}.`
   });
 }
 
@@ -357,7 +349,8 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
         type: "Leave",
         actor: actorObj.id,
         target: place,
-        to: actorObj.followers
+        to: actorObj.followers,
+        summary: `${actorObj.name} left ${place.name}.`
       }
     });
   });

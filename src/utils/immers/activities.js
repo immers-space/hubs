@@ -67,7 +67,7 @@ export default class Activities {
       return [];
     }
     this.inboxStartDate = new Date(inbox.orderedItems[inbox.orderedItems.length - 1].published);
-    return inbox.orderedItems.filter(activity => activity.type === "Create").map(act => Activities.ActivityAsChat(act));
+    return inbox.orderedItems.map(act => Activities.ActivityAsChat(act)).filter(message => message.body);
   }
 
   async outboxAsChat() {
@@ -76,9 +76,7 @@ export default class Activities {
       return [];
     }
     this.outboxStartDate = new Date(outbox.orderedItems[outbox.orderedItems.length - 1].published);
-    return outbox.orderedItems
-      .filter(activity => activity.type === "Create")
-      .map(act => Activities.ActivityAsChat(act, true));
+    return outbox.orderedItems.map(act => Activities.ActivityAsChat(act, true)).filter(message => message.body);
   }
 
   async feedAsChat() {
@@ -168,14 +166,14 @@ export default class Activities {
     const message = {
       isImmersFeed: true,
       sent: outbox,
-      context: activity.object.context,
+      context: activity.object?.context,
       timestamp: new Date(activity.published).getTime(),
       name: activity.actor.name,
       sessionId: activity.actor.id,
       icon: activity.actor.icon,
       immer: new URL(activity.actor.id).hostname
     };
-    switch (activity.object.type) {
+    switch (activity.object?.type) {
       case "Note":
         message.type = "chat";
         message.body = activity.object.content;
@@ -188,6 +186,11 @@ export default class Activities {
         message.type = "video";
         message.body = { src: activity.object.url };
         break;
+      default:
+        if (activity.summary) {
+          message.type = "activity";
+          message.body = activity.summary;
+        }
     }
     return message;
   }

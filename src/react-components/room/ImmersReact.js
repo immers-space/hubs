@@ -31,6 +31,16 @@ ImmerLink.propTypes = {
 };
 
 export function ImmerChatMessage({ sent, sender, timestamp, icon, immer, context, messages }) {
+  if (messages[0].type === "activity") {
+    return (
+      <li className={classNames(chatStyles.messageGroup, { [chatStyles.sent]: sent })}>
+        <p className={classNames(chatStyles.messageGroupLabel, styles.immerChatLabel)}>
+          {messages[0].body} |{" "}
+          <FormattedRelativeTime updateIntervalInSeconds={10} value={(timestamp - Date.now()) / 1000} />
+        </p>
+      </li>
+    );
+  }
   return (
     <li className={classNames(chatStyles.messageGroup, { [chatStyles.sent]: sent })}>
       <p className={classNames(chatStyles.messageGroupLabel, styles.immerChatLabel)}>
