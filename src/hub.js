@@ -1554,5 +1554,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   authChannel.setSocket(socket);
   linkChannel.setSocket(socket);
 
-  immers.initialize(store, scene, remountUI);
+  immers.initialize(store, scene, remountUI, messageDispatch);
 });
