@@ -4,7 +4,7 @@ import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.4.1");
+console.log("immers.space client v0.5.0");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
