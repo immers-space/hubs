@@ -302,7 +302,7 @@ export async function auth(store) {
   }
 }
 
-export async function initialize(store, scene, remountUI, messageDispatch) {
+export async function initialize(store, scene, remountUI, messageDispatch, createInWorldLogMessage) {
   hubScene = scene;
   localPlayer = document.getElementById("avatar-rig");
   // immers profile
@@ -441,9 +441,12 @@ export async function initialize(store, scene, remountUI, messageDispatch) {
     // stream new activity while in room
     immerSocket.on("inbox-update", activity => {
       activity = JSON.parse(activity);
-      if (activity.type === "Create") {
-        const detail = activities.activityAsChat(activity);
-        messageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
+      const message = activities.activityAsChat(activity);
+      if (message.body) {
+        messageDispatch.dispatchEvent(new CustomEvent("message", { detail: message }));
+        if (scene.is("vr-mode")) {
+          createInWorldLogMessage(message);
+        }
       }
     });
     // intercept outgoing messages and post to immers space feed
