@@ -112,6 +112,24 @@ export default class Activities {
     });
   }
 
+  accept(follow) {
+    return this.postActivity({
+      type: "Accept",
+      actor: this.actor.id,
+      object: follow.id,
+      to: follow.actor
+    });
+  }
+
+  follow(targetId) {
+    return this.postActivity({
+      type: "Follow",
+      actor: this.actor.id,
+      object: targetId,
+      to: targetId
+    });
+  }
+
   note(content, to, isPublic, summary) {
     const obj = {
       content,
