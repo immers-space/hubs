@@ -11,6 +11,8 @@ AFRAME.registerComponent("immers-follow-button", {
       this.playerEl.addEventListener("stateadded", this.onState);
       if (this.playerEl.is("immers-follow-friend")) {
         this.el.setAttribute("immers-follow-button", { relation: "friend" });
+      } else if (this.playerEl.is("immers-follow-request")) {
+        this.el.setAttribute("immers-follow-button", { relation: "request" });
       }
     });
     this.textEl = this.el.querySelector("[text]");
