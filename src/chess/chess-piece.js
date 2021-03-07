@@ -80,17 +80,8 @@ AFRAME.registerComponent("chess-piece", {
     entity.setAttribute("hoverable-visuals", "", true);
     entity.removeAttribute("hoverable-visuals");
     entity.metadata = this.data;
-    setTimeout(() => {
-      const newPiece = {
-        color: this.data.color,
-        id: entity.id,
-        type: this.data.type,
-        initialSquare: this.data.initialSquare,
-        lastSquare: this.data.lastSquare
-      };
-      this.scene.emit("addPiece", newPiece);
-      GameNetwork.broadcastData("chess::add-piece", newPiece);
-    });
+    this.announcePiece(entity);
+    this.autoSetY(entity);
     entity.fireResetRotation = () => {
       this.resetPieceRotation(entity);
     };
@@ -101,6 +92,41 @@ AFRAME.registerComponent("chess-piece", {
       piece.setAttribute("rotation", "0 180 0");
     } else {
       piece.setAttribute("rotation", "0 0 0");
+    }
+  },
+
+  autoSetY(entity) {
+    const bbox = new THREE.Box3();
+    bbox.setFromObject(entity.object3D);
+    if (isFinite(bbox.min.y)) {
+      const height = bbox.max.y/2 - bbox.min.y/2;
+      const autoY = height + this.squareSize * 1.5;
+      this.data.pieceY = autoY;
+      const pos = entity.getAttribute("position");
+      pos.y = autoY;
+      entity.setAttribute("position", pos);
+    } else {
+      setTimeout(() => {
+        this.autoSetY(entity);
+      }, 1000);
+    }
+  },
+
+  announcePiece(piece) {
+    if (piece.id) {
+      const newPiece = {
+        color: this.data.color,
+        id: piece.id,
+        type: this.data.type,
+        initialSquare: this.data.initialSquare,
+        lastSquare: this.data.lastSquare
+      };
+      this.scene.emit("addPiece", newPiece);
+      GameNetwork.broadcastData("chess::add-piece", newPiece);
+    } else {
+      setTimeout(() => {
+        this.announcePiece(piece);
+      }, 500);
     }
   }
 });
