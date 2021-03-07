@@ -10,7 +10,7 @@ import immersLogo from "../../assets/images/immers_logo.png";
 
 export function ImmerLink({ place }) {
   if (!place) {
-    return;
+    return null;
   }
   let placeUrl = place.url;
   // inject user handle into desintation url so they don't have to type it
