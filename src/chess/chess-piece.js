@@ -97,19 +97,15 @@ AFRAME.registerComponent("chess-piece", {
 
   autoSetY(entity) {
     const bbox = new THREE.Box3();
-    bbox.setFromObject(entity.object3D);
-    if (isFinite(bbox.min.y)) {
-      const height = bbox.max.y/2 - bbox.min.y/2;
-      const autoY = height + this.squareSize * 1.5;
-      this.data.pieceY = autoY;
-      const pos = entity.getAttribute("position");
-      pos.y = autoY;
-      entity.setAttribute("position", pos);
-    } else {
-      setTimeout(() => {
-        this.autoSetY(entity);
-      }, 1000);
-    }
+    entity.addEventListener("object3dset", () => {
+      bbox.setFromObject(entity.object3D);
+      if (isFinite(bbox.min.y)) {
+        const height = bbox.max.y/2 - bbox.min.y/2;
+        const autoY = height + this.squareSize * 1.5;
+        this.data.pieceY = autoY;
+        entity.object3D.position.y = autoY;
+      }
+    });
   },
 
   announcePiece(piece) {

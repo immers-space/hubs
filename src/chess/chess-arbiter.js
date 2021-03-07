@@ -105,9 +105,9 @@ AFRAME.registerSystem("chess-arbiter", {
     }
   },
 
-  playAs(color, id, profile) {
+  async playAs(color, id, profile) {
     if (!this.chessGame) {
-      this.chessGame = this.sceneEl.querySelector("a-entity[chess-game]");
+      this.chessGame = await this.boardPosition.addChessGame();
     }
     const colorAvailable = !this.state.players[color].id;
     if (colorAvailable) {
@@ -360,5 +360,13 @@ AFRAME.registerSystem("chess-arbiter", {
       window.NAF.utils.takeOwnership(set);
       set.parentNode.removeChild(set);
     }
+  },
+
+  registerBoardPosition(component) {
+    this.boardPosition = component;
+  },
+
+  registerGame(entity) {
+    this.chessGame = entity;
   }
 });
