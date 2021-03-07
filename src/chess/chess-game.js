@@ -9,6 +9,10 @@ AFRAME.registerComponent("chess-game", {
     snapToSquare: { default: true }
   },
 
+  init() {
+    this.el.sceneEl.systems["chess-arbiter"].registerGame(this.el);
+  },
+
   update() {
     while (this.el.firstChild) {
       this.el.removeChild(this.el.firstChild);
@@ -25,6 +29,7 @@ AFRAME.registerComponent("chess-game", {
         this.data.wireframeBoard
       }; `
     );
+    board.addEventListener("loaded", () => this.el.emit("board-loaded"), { once: true });
     this.el.appendChild(board);
   }
 });
