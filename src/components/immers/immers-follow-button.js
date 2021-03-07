@@ -4,7 +4,7 @@
  * @component immers-follow-button
  */
 AFRAME.registerComponent("immers-follow-button", {
-  schema: { relation: { type: "string", default: "none" } },
+  schema: { relation: { type: "string", default: "none", oneOf: ["none", "request", "friend", "pending"] } },
   init() {
     NAF.utils.getNetworkedEntity(this.el).then(networkedEl => {
       this.playerEl = networkedEl;
@@ -32,8 +32,7 @@ AFRAME.registerComponent("immers-follow-button", {
           this.action("immers-follow-accept", "friend");
           break;
         case "friend":
-          // TODO: unfriend
-          // this.action("immers-follow-reject", "none");
+          this.action("immers-follow-reject", "none");
           break;
       }
     };

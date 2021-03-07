@@ -360,13 +360,16 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     // inReplyTo on a follow means it is a followback, don't show accept prompt (already a friend)
     if (friendStatus?.type === "Follow" && !friendStatus?.inReplyTo) {
       el.removeState("immers-follow-friend");
+      el.removeState("immers-follow-none");
       el.addState("immers-follow-request");
-    } else if (friendStatus) {
+    } else if (friendStatus && friendStatus.type !== "Reject") {
       el.removeState("immers-follow-request");
+      el.removeState("immers-follow-none");
       el.addState("immers-follow-friend");
     } else {
       el.removeState("immers-follow-request");
       el.removeState("immers-follow-friend");
+      el.addState("immers-follow-none");
     }
   };
   const updateFriends = async () => {
@@ -374,7 +377,7 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
       const profile = store.state.profile;
       friendsCol = await getFriends(profile);
       activities.friends = friendsCol.orderedItems;
-      remountUI({ friends: friendsCol.orderedItems, handle: profile.handle });
+      remountUI({ friends: friendsCol.orderedItems.filter(act => act.type !== "Reject"), handle: profile.handle });
       // update follow button for new friends
       const players = window.APP.componentRegistry["player-info"];
       players?.forEach(infoComp => setFriendState(infoComp.data.immersId, infoComp.el));
@@ -412,7 +415,7 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     if (!event.detail) {
       return;
     }
-    activities.follow(event.detail).catch(err => console.err("Error sending follow request:", err.message));
+    activities.follow(event.detail).catch(err => console.error("Error sending follow request:", err.message));
   });
   scene.addEventListener("immers-follow-accept", event => {
     const follow = friendsCol.orderedItems.find(act => act.actor.id === event.detail && act.type === "Follow");
@@ -421,9 +424,11 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     }
     activities.accept(follow).catch(err => console.err("Error sending follow accept:", err.message));
   });
-  // TODO: unfriend
-  // scene.addEventListener("immers-follow-reject", event => {
-  // });
+  // unfriend
+  scene.addEventListener("immers-follow-reject", event => {
+    // server converts actorId to followId for reject object
+    activities.reject(event.detail, event.detail).catch(err => console.error("Error sending unfollow:", err.message));
+  });
 
   setupMonetization(hubScene, localPlayer);
 

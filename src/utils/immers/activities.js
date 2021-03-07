@@ -121,6 +121,15 @@ export default class Activities {
     });
   }
 
+  reject(objectId, recipientId) {
+    return this.postActivity({
+      type: "Reject",
+      actor: this.actor.id,
+      object: objectId,
+      to: recipientId
+    });
+  }
+
   follow(targetId) {
     return this.postActivity({
       type: "Follow",
