@@ -13,10 +13,7 @@ AFRAME.registerComponent("chess-board-position", {
     bbox.size(size);
     const squareSize = size.x / 8;
     const game = document.createElement("a-entity");
-    game.setAttribute(
-      "chess-game",
-      `squareSize: ${squareSize}; hideBoard: true; wireframeBoard:true; teleportPlayers: true;`
-    );
+    game.setAttribute("chess-game", `squareSize: ${squareSize}; hideBoard: true;`);
     game.setAttribute("networked", "template: #template-waypoint-avatar;");
     const newPos = bbox.min;
     newPos.y = newPos.y - squareSize - squareSize / 4;
