@@ -7,6 +7,7 @@ import styles from "./ImmersReact.scss";
 import { FormattedRelativeTime } from "react-intl";
 import { proxiedUrlFor } from "../../utils/media-url-utils";
 import immersLogo from "../../assets/images/immers_logo.png";
+import merge from "deepmerge";
 
 export function ImmerLink({ place }) {
   if (!place) {
@@ -57,7 +58,7 @@ export function ImmersChatMessage({ sent, sender, timestamp, isFriend, icon, imm
         <span className={styles.immerName}>[{immer}]</span>&nbsp;|&nbsp;<ImmerLink place={context} />&nbsp;|{" "}
         <FormattedRelativeTime updateIntervalInSeconds={10} value={(timestamp - Date.now()) / 1000} />
       </p>
-      <ul className={chatStyles.messageGroupMessages}>{messages.map(message => getMessageComponent(message))}</ul>
+      <ul className={chatStyles.messageGroupMessages}>{messages.map(message => proxyAndGetMessageComponent(message))}</ul>
     </li>
   );
 }
@@ -68,7 +69,10 @@ ImmersChatMessage.propTypes = {
   timestamp: PropTypes.any,
   messages: PropTypes.array,
   immer: PropTypes.string,
-  icon: PropTypes.string,
+  icon: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.object
+  ]),
   isFriend: PropTypes.bool,
   context: PropTypes.object
 };
@@ -130,4 +134,13 @@ export function ImmersMoreHistoryButton() {
       </div>
     )
   );
+}
+
+function proxyAndGetMessageComponent(message) {
+  // media urls need proxy to pass CSP & CORS
+  if (message.body?.src) {
+    message = merge({}, message);
+    message.body.src = proxiedUrlFor(message.body.src);
+  }
+  return getMessageComponent(message);
 }
