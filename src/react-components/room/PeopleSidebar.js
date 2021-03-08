@@ -146,7 +146,7 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
               {person.friendStatus && <ImmersFriendIcon />}
               {!person.remote && <DeviceIcon title={getDeviceLabel(person.context, intl)} />}
               {person.remote ? (
-                <ImmersAvatarIcon avi={person.friendStatus.actor.icon} />
+                person.friendStatus?.actor?.icon && <ImmersAvatarIcon avi={person.friendStatus.actor.icon} />
               ) : (
                 !person.context.discord &&
                 !person.remote &&
