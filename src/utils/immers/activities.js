@@ -112,6 +112,33 @@ export default class Activities {
     });
   }
 
+  accept(follow) {
+    return this.postActivity({
+      type: "Accept",
+      actor: this.actor.id,
+      object: follow.id,
+      to: follow.actor
+    });
+  }
+
+  reject(objectId, recipientId) {
+    return this.postActivity({
+      type: "Reject",
+      actor: this.actor.id,
+      object: objectId,
+      to: recipientId
+    });
+  }
+
+  follow(targetId) {
+    return this.postActivity({
+      type: "Follow",
+      actor: this.actor.id,
+      object: targetId,
+      to: targetId
+    });
+  }
+
   note(content, to, isPublic, summary) {
     const obj = {
       content,
