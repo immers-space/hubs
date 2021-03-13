@@ -1,3 +1,5 @@
+import { COLOR } from './game-constants';
+
 AFRAME.registerComponent("chess-game-controls", {
   init() {
     this.el.setAttribute("hover-menu", {
@@ -13,7 +15,7 @@ AFRAME.registerComponent("chess-game-controls", {
 
 AFRAME.registerComponent("chess-play-white-button", {
   onClick() {
-    const detail = { color: "white" };
+    const detail = { color: COLOR.WHITE };
     this.el.sceneEl.emit("chess:playAs", detail);
   },
   play() {
@@ -26,7 +28,7 @@ AFRAME.registerComponent("chess-play-white-button", {
 
 AFRAME.registerComponent("chess-play-black-button", {
   onClick() {
-    const detail = { color: "black" };
+    const detail = { color: COLOR.BLACK };
     this.el.sceneEl.emit("chess:playAs", detail);
   },
   play() {

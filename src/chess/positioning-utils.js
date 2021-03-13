@@ -1,3 +1,5 @@
+import { COLOR } from './game-constants';
+
 function getHalfSquare() {
   const scene = window.AFRAME.scenes[0];
   const chessBoard = scene.querySelector("a-entity[chess-board]");
@@ -92,11 +94,11 @@ function getPieceFromSquare(square) {
   const scene = window.AFRAME.scenes[0];
   const players = scene.systems.state.state.players;
   const whitePieces = players.white.pieces.map(p => {
-    p.color = "w";
+    p.color = COLOR.W;
     return p;
   });
   const blackPieces = players.black.pieces.map(p => {
-    p.color = "b";
+    p.color = COLOR.B;
     return p;
   });
   const allPieces = whitePieces.concat(blackPieces);

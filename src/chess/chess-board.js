@@ -1,3 +1,5 @@
+import { COLOR } from './game-constants';
+
 AFRAME.registerComponent("chess-board", {
   schema: {
     squareSize: { default: 0.25 },
@@ -60,9 +62,9 @@ AFRAME.registerComponent("chess-board", {
     } else if (this.data.hideBoard) {
       box.setAttribute("material", "transparent: true; opacity: 0;");
     } else if (altColor) {
-      box.setAttribute("color", index % 2 === 0 ? "black" : "white");
+      box.setAttribute("color", index % 2 === 0 ? COLOR.BLACK : COLOR.WHITE);
     } else {
-      box.setAttribute("color", index % 2 === 0 ? "white" : "black");
+      box.setAttribute("color", index % 2 === 0 ? COLOR.WHITE : COLOR.BLACK);
     }
   }
 });
