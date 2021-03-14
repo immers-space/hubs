@@ -2,8 +2,9 @@ import io from "socket.io-client";
 import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
+import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.4.0");
+console.log("immers.space client v0.6.0");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
@@ -12,6 +13,7 @@ const authPromise = new Promise((resolve, reject) => {
   resolveAuth = resolve;
   rejectAuth = reject;
 });
+const activities = new Activities(localImmer);
 let homeImmer;
 let place;
 let token;
@@ -93,30 +95,13 @@ export function updateProfile(actorObj, update) {
   return postActivity(actorObj.outbox, activity);
 }
 
-export function follow(actorObj, targetId) {
-  return postActivity(actorObj.outbox, {
-    type: "Follow",
-    actor: actorObj.id,
-    object: targetId,
-    to: targetId
-  });
-}
-
 export function arrive(actorObj) {
   return postActivity(actorObj.outbox, {
     type: "Arrive",
     actor: actorObj.id,
     target: place,
-    to: actorObj.followers
-  });
-}
-
-export function leave(actorObj) {
-  return postActivity(actorObj.outbox, {
-    type: "Leave",
-    actor: actorObj.id,
-    target: place,
-    to: actorObj.followers
+    to: actorObj.followers,
+    summary: `${actorObj.name} arrived at ${place.name}.`
   });
 }
 
@@ -135,7 +120,11 @@ export async function createAvatar(actorObj, hubsAvatarId) {
     generator: place.id
   };
   if (hubsAvatar.files.thumbnail) {
-    immersAvatar.icon = hubsAvatar.files.thumbnail;
+    immersAvatar.icon = {
+      type: "Image",
+      mediaType: "image/png",
+      url: hubsAvatar.files.thumbnail
+    };
   }
   if (hubsAvatar.attributions) {
     immersAvatar.attributedTo = Object.values(hubsAvatar.attributions).map(name => ({
@@ -254,7 +243,7 @@ export async function auth(store) {
   }
   place = await getObject(`${localImmer}/o/immer`);
   place.url = hubUri; // include room id
-
+  activities.place = place;
   if (hashParams.has("access_token")) {
     // not safe to update store here, will be saved later in initialize()
     token = hashParams.get("access_token");
@@ -264,6 +253,8 @@ export async function auth(store) {
     token = store.state.credentials.immerToken;
     homeImmer = store.state.credentials.immerHome;
   }
+  activities.token = token;
+  activities.homeImmer = homeImmer;
 
   const redirectToAuth = () => {
     // send to token endpoint at local immer, it handles
@@ -302,11 +293,12 @@ export async function auth(store) {
   }
 }
 
-export async function initialize(store, scene, remountUI) {
+export async function initialize(store, scene, remountUI, messageDispatch, createInWorldLogMessage) {
   hubScene = scene;
   localPlayer = document.getElementById("avatar-rig");
   // immers profile
   actorObj = await authPromise;
+  activities.actor = actorObj;
   const initialAvi = store.state.profile.avatarId;
   const actorAvi = getAvatarFromActor(actorObj);
   // cache current avatar so doesn't get recreated during a profile update
@@ -351,27 +343,44 @@ export async function initialize(store, scene, remountUI) {
         type: "Leave",
         actor: actorObj.id,
         target: place,
-        to: actorObj.followers
+        to: actorObj.followers,
+        summary: `${actorObj.name} left ${place.name}.`
       }
     });
   });
 
   // friends list
   let friendsCol;
+  const setFriendState = (immersId, el) => {
+    // friends not loaded or is myself
+    if (!friendsCol || immersId === actorObj.id) {
+      return;
+    }
+    const friendStatus = friendsCol.orderedItems.find(act => act.actor.id === immersId);
+    // inReplyTo on a follow means it is a followback, don't show accept prompt (already a friend)
+    if (friendStatus?.type === "Follow" && !friendStatus?.inReplyTo) {
+      el.removeState("immers-follow-friend");
+      el.removeState("immers-follow-none");
+      el.addState("immers-follow-request");
+    } else if (friendStatus && friendStatus.type !== "Reject") {
+      el.removeState("immers-follow-request");
+      el.removeState("immers-follow-none");
+      el.addState("immers-follow-friend");
+    } else {
+      el.removeState("immers-follow-request");
+      el.removeState("immers-follow-friend");
+      el.addState("immers-follow-none");
+    }
+  };
   const updateFriends = async () => {
     if (store.state.profile.id) {
       const profile = store.state.profile;
       friendsCol = await getFriends(profile);
-      remountUI({ friends: friendsCol.orderedItems, handle: profile.handle });
+      activities.friends = friendsCol.orderedItems;
+      remountUI({ friends: friendsCol.orderedItems.filter(act => act.type !== "Reject"), handle: profile.handle });
       // update follow button for new friends
       const players = window.APP.componentRegistry["player-info"];
-      if (players) {
-        players.forEach(infoComp => {
-          if (friendsCol.orderedItems.some(act => act.actor.id === infoComp.data.immersId)) {
-            infoComp.el.addState("friend");
-          }
-        });
-      }
+      players?.forEach(infoComp => setFriendState(infoComp.data.immersId, infoComp.el));
     }
   };
   updateFriends();
@@ -400,21 +409,85 @@ export async function initialize(store, scene, remountUI) {
   });
 
   // entity interactions
-  scene.addEventListener("immers-id-changed", event => {
-    if (!friendsCol) {
-      return;
-    }
-    if (friendsCol.orderedItems.some(act => act.actor.id === event.detail)) {
-      event.target.addState("friend");
-    }
-  });
+  scene.addEventListener("immers-id-changed", event => setFriendState(event.detail, event.target));
 
   scene.addEventListener("immers-follow", event => {
     if (!event.detail) {
       return;
     }
-    follow(store.state.profile, event.detail).catch(err => console.err("Error sending follow request:", err.message));
+    activities.follow(event.detail).catch(err => console.error("Error sending follow request:", err.message));
+  });
+  scene.addEventListener("immers-follow-accept", event => {
+    const follow = friendsCol.orderedItems.find(act => act.actor.id === event.detail && act.type === "Follow");
+    if (!follow) {
+      return;
+    }
+    activities.accept(follow).catch(err => console.err("Error sending follow accept:", err.message));
+  });
+  // unfriend
+  scene.addEventListener("immers-follow-reject", event => {
+    // server converts actorId to followId for reject object
+    activities.reject(event.detail, event.detail).catch(err => console.error("Error sending unfollow:", err.message));
   });
 
   setupMonetization(hubScene, localPlayer);
+
+  // news feed and chat integration, behind a feature switch as it needs the new hubs ui
+  if (messageDispatch) {
+    // fetch news feed
+    const updateFeed = async () => {
+      const { messages, more } = await activities.feedAsChat();
+      messages.forEach(detail => {
+        messageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
+      });
+      return more;
+    };
+    updateFeed();
+    // event from "load more" button at top of in chat sidebar
+    window.addEventListener("immers-load-more-history", async () => {
+      const more = await updateFeed();
+      window.dispatchEvent(new CustomEvent("immers-more-history-loaded", { detail: more }));
+    });
+
+    // stream new activity while in room
+    immerSocket.on("inbox-update", activity => {
+      activity = JSON.parse(activity);
+      const message = activities.activityAsChat(activity);
+      if (message.body) {
+        messageDispatch.dispatchEvent(new CustomEvent("message", { detail: message }));
+        if (scene.is("vr-mode")) {
+          createInWorldLogMessage(message);
+        }
+      }
+    });
+    // intercept outgoing messages and post to immers space feed
+    messageDispatch.addEventListener("message", ({ detail: message }) => {
+      // skip if incoming message or loaded from history
+      if (!message.sent || message.isImmersFeed) {
+        return;
+      }
+      // Send to immers id of everyone in room so all chat goes through immers and
+      // we don't have to worry about duplicate messages appearing in chat
+      const localAudience = Object.values(window.APP.hubChannel.presence.state)
+        .map(presence => presence.metas[presence.metas.length - 1]?.profile.id)
+        .filter(id => id && id !== actorObj.id);
+      // send activity
+      let task;
+      switch (message.type) {
+        case "chat":
+          task = activities.note(message.body, localAudience, true, null);
+          break;
+        case "image":
+        case "photo":
+          task = activities.image(message.body.src, localAudience, true, null);
+          break;
+        case "video":
+          task = activities.video(message.body.src, localAudience, true, null);
+          break;
+        default:
+          console.log("Chat message not shared", message);
+      }
+      task.catch(err => console.error(`Error sharing chat: ${err.message}`));
+    });
+  }
 }
