@@ -1,3 +1,5 @@
+import { COLOR } from './game-constants';
+
 AFRAME.registerComponent("chess-game-status", {
   schema: {
     backgroundColor: { default: "#282828" },
@@ -43,7 +45,7 @@ AFRAME.registerComponent("chess-game-status", {
     if (inDraw || inStalemate) {
       message = inDraw ? "Game over: draw." : "Game over: stalemate.";
     } else {
-      const color = chessEngine.turn() === "w" ? "White" : "Black";
+      const color = chessEngine.turn() === COLOR.W ? "White" : "Black";
       message = color;
       message += inCheck ? " (in check)" : "";
       message += inCheckmate ? " checkmated." : " to move.";

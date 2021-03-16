@@ -1,3 +1,5 @@
+import { GAME_MODE, COLOR } from './game-constants';
+
 AFRAME.registerState({
   initialState: {
     players: {
@@ -31,13 +33,17 @@ AFRAME.registerState({
     imPlaying: false,
     myColor: null,
     opponentColor: null,
-    opponentId: null
+    opponentId: null,
+    gameMode: GAME_MODE.NONE
   },
   handlers: {
+    setGameMode: function(state, action) {
+      state.gameMode = action.gameMode;
+    },
     imPlaying: function(state, action) {
       state.imPlaying = true;
       state.myColor = action.color;
-      state.opponentColor = action.color === "white" ? "black" : "white";
+      state.opponentColor = action.color === COLOR.WHITE ? COLOR.BLACK : COLOR.WHITE;
       state.opponentId = state.players[state.opponentColor].id ? state.players[state.opponentColor].id : null;
       this.setPlayer(state, action);
     },
@@ -56,7 +62,7 @@ AFRAME.registerState({
       state.players[action.color].pieces = action.pieces;
     },
     addPiece: function(state, action) {
-      const color = action.color === "w" || action.color === "white" ? "white" : "black";
+      const color = action.color === COLOR.W || action.color === COLOR.WHITE ? COLOR.WHITE : COLOR.BLACK;
       state.players[color].pieces.push({
         id: action.id,
         type: action.type,
@@ -65,7 +71,7 @@ AFRAME.registerState({
       });
     },
     updatePiece: function(state, action) {
-      const color = action.color === "w" || action.color === "white" ? "white" : "black";
+      const color = action.color === COLOR.W || action.color === COLOR.WHITE ? COLOR.WHITE : COLOR.BLACK;
       const updateIndex = state.players[color].pieces
         .map(function(piece) {
           return piece.id;
@@ -74,7 +80,7 @@ AFRAME.registerState({
       state.players[color].pieces[updateIndex].lastSquare = action.lastSquare;
     },
     removePiece: function(state, action) {
-      const color = action.color === "w" || action.color === "white" ? "white" : "black";
+      const color = action.color === COLOR.W || action.color === COLOR.WHITE ? COLOR.WHITE : COLOR.BLACK;
       const removeIndex = state.players[color].pieces
         .map(function(piece) {
           return piece.id;

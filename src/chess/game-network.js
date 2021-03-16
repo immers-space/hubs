@@ -39,6 +39,9 @@ function setupNetwork(scene) {
   const state = scene.systems.state.state;
   window.NAF.connection.onConnect(() => {
     // Networked State Broadcasts
+    window.NAF.connection.subscribeToDataChannel("chess::set-game-mode", (_, dataType, data) => {
+      scene.emit("setGameMode", data);
+    });
     window.NAF.connection.subscribeToDataChannel("chess::set-player", (_, dataType, data) => {
       scene.emit("setPlayer", data);
       if (state.imPlaying && state.opponentColor === data.color) {
@@ -60,9 +63,13 @@ function setupNetwork(scene) {
     window.NAF.connection.subscribeToDataChannel("chess::remove-piece", (_, dataType, oldPiece) => {
       scene.emit("removePiece", oldPiece);
     });
-    window.NAF.connection.subscribeToDataChannel("chess::reset-game", () => {
+    window.NAF.connection.subscribeToDataChannel("chess::reset-game", (_, dataType, data) => {
       scene.emit("resetChessState");
-      scene.systems["chess-arbiter"].resetGame();
+      const fen = (data.fen) ? data.fen : '';
+      scene.systems["chess-arbiter"].resetGame(fen);
+    });
+    window.NAF.connection.subscribeToDataChannel("chess::load-pgn", (_, dataType, data) => {
+      scene.systems["chess-arbiter"].loadPGN(data.pgn);
     });
     // Chess Engine Broadcasts
     window.NAF.connection.subscribeToDataChannel("chess::sync-move", (_, dataType, data) => {
