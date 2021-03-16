@@ -13,8 +13,7 @@ AFRAME.registerComponent("chess-notation-controls", {
 
 AFRAME.registerComponent("copy-pgn-button", {
   onClick() {
-    const detail = { color: "white" };
-    this.el.sceneEl.emit("chess:copyPGN", detail);
+    this.el.sceneEl.emit("chess:copyPGN");
   },
   play() {
     this.el.object3D.addEventListener("interact", this.onClick);
@@ -26,8 +25,7 @@ AFRAME.registerComponent("copy-pgn-button", {
 
 AFRAME.registerComponent("copy-fen-button", {
   onClick() {
-    const detail = { color: "black" };
-    this.el.sceneEl.emit("chess:copyFEN", detail);
+    this.el.sceneEl.emit("chess:copyFEN");
   },
   play() {
     this.el.object3D.addEventListener("interact", this.onClick);

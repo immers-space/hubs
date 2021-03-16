@@ -1,3 +1,4 @@
+import { GAME_MODE, COLOR } from './game-constants';
 import rookB from "../assets/models/chess/black_rook.glb";
 import knightB from "../assets/models/chess/black_knight.glb";
 import bishopB from "../assets/models/chess/black_bishop.glb";
@@ -40,61 +41,164 @@ AFRAME.registerComponent("chess-set", {
     this.invertKnights = this.chessGame.getAttribute("chess-game").invertKnights;
   },
 
-  buildSet(color = "all") {
-    const whitePieces = [
-      { type: "r", color: "w", initialSquare: "a1", model: rookW },
-      { type: "n", color: "w", initialSquare: "b1", model: knightW },
-      { type: "b", color: "w", initialSquare: "c1", model: bishopW },
-      { type: "q", color: "w", initialSquare: "d1", model: queenW },
-      { type: "k", color: "w", initialSquare: "e1", model: kingW },
-      { type: "b", color: "w", initialSquare: "f1", model: bishopW },
-      { type: "n", color: "w", initialSquare: "g1", model: knightW },
-      { type: "r", color: "w", initialSquare: "h1", model: rookW },
-      { type: "p", color: "w", initialSquare: "a2", model: pawnW },
-      { type: "p", color: "w", initialSquare: "b2", model: pawnW },
-      { type: "p", color: "w", initialSquare: "c2", model: pawnW },
-      { type: "p", color: "w", initialSquare: "d2", model: pawnW },
-      { type: "p", color: "w", initialSquare: "e2", model: pawnW },
-      { type: "p", color: "w", initialSquare: "f2", model: pawnW },
-      { type: "p", color: "w", initialSquare: "g2", model: pawnW },
-      { type: "p", color: "w", initialSquare: "h2", model: pawnW }
+  buildSet(color = "") {
+    const currentGameMode = this.el.sceneEl.systems.state.state.gameMode;
+    const allWhitePieces = [
+      { type: "r", initialSquare: "a1" },
+      { type: "n", initialSquare: "b1" },
+      { type: "b", initialSquare: "c1" },
+      { type: "q", initialSquare: "d1" },
+      { type: "k", initialSquare: "e1" },
+      { type: "b", initialSquare: "f1" },
+      { type: "n", initialSquare: "g1" },
+      { type: "r", initialSquare: "h1" },
+      { type: "p", initialSquare: "a2" },
+      { type: "p", initialSquare: "b2" },
+      { type: "p", initialSquare: "c2" },
+      { type: "p", initialSquare: "d2" },
+      { type: "p", initialSquare: "e2" },
+      { type: "p", initialSquare: "f2" },
+      { type: "p", initialSquare: "g2" },
+      { type: "p", initialSquare: "h2" }
     ];
-    const blackPieces = [
-      { type: "r", color: "b", initialSquare: "a8", model: rookB },
-      { type: "n", color: "b", initialSquare: "b8", model: knightB },
-      { type: "b", color: "b", initialSquare: "c8", model: bishopB },
-      { type: "q", color: "b", initialSquare: "d8", model: queenB },
-      { type: "k", color: "b", initialSquare: "e8", model: kingB },
-      { type: "b", color: "b", initialSquare: "f8", model: bishopB },
-      { type: "n", color: "b", initialSquare: "g8", model: knightB },
-      { type: "r", color: "b", initialSquare: "h8", model: rookB },
-      { type: "p", color: "b", initialSquare: "a7", model: pawnB },
-      { type: "p", color: "b", initialSquare: "b7", model: pawnB },
-      { type: "p", color: "b", initialSquare: "c7", model: pawnB },
-      { type: "p", color: "b", initialSquare: "d7", model: pawnB },
-      { type: "p", color: "b", initialSquare: "e7", model: pawnB },
-      { type: "p", color: "b", initialSquare: "f7", model: pawnB },
-      { type: "p", color: "b", initialSquare: "g7", model: pawnB },
-      { type: "p", color: "b", initialSquare: "h7", model: pawnB }
+    allWhitePieces.map(p => {
+      p.color = COLOR.W;
+      p.model = this.getModel(p.color, p.type);
+    });
+    const allBlackPieces = [
+      { type: "r", initialSquare: "a8" },
+      { type: "n", initialSquare: "b8" },
+      { type: "b", initialSquare: "c8" },
+      { type: "q", initialSquare: "d8" },
+      { type: "k", initialSquare: "e8" },
+      { type: "b", initialSquare: "f8" },
+      { type: "n", initialSquare: "g8" },
+      { type: "r", initialSquare: "h8" },
+      { type: "p", initialSquare: "a7" },
+      { type: "p", initialSquare: "b7" },
+      { type: "p", initialSquare: "c7" },
+      { type: "p", initialSquare: "d7" },
+      { type: "p", initialSquare: "e7" },
+      { type: "p", initialSquare: "f7" },
+      { type: "p", initialSquare: "g7" },
+      { type: "p", initialSquare: "h7" }
     ];
+    allBlackPieces.map(p => {
+      p.color = COLOR.B;
+      p.model = this.getModel(p.color, p.type);
+    });
     let pieces = [];
-    if (color === "white") {
-      pieces = whitePieces;
-    } else if (color === "black") {
-      pieces = blackPieces;
-    } else if (color === "all") {
-      pieces = whitePieces.concat(blackPieces);
-    } else {
-      return false;
+    if (currentGameMode === GAME_MODE.STANDARD) {
+      pieces = (color === COLOR.WHITE) ? allWhitePieces : allBlackPieces;
+    } else if (currentGameMode === GAME_MODE.FEN || currentGameMode === GAME_MODE.PGN) {
+      pieces = this.getEnginePieces(color);
     }
     this.buildPieces(pieces);
     this.createCursor();
   },
+  getEnginePieces(color) {
+    let pieces = [];
+    const c = (color === COLOR.WHITE) ? COLOR.W : COLOR.B;
+    const chessEngine = this.el.sceneEl.systems["chess-arbiter"].chessEngine;
+    const board = chessEngine.board();
+    for (let row = 0; row < board.length; row++) {
+      for (let col = 0; col < board[row].length; col++) {
+        if (board[row][col] && board[row][col].color === c) {
+          const color = board[row][col].color;
+          const type = board[row][col].type;
+          const initialSquare = this.getInitialSquare(row, col);
+          const model = this.getModel(color, type);
+          const piece = { color, type, initialSquare, model };
+          pieces.push(piece);
+        }
+      }
+    }
+    return pieces;
+  },
+  getInitialSquare(row, col) {
+    let rank = null;
+    let file = null;
+    switch (row) {
+      case 0:
+        rank = "8";
+        break;
+      case 1:
+        rank = "7";
+        break;
+      case 2:
+        rank = "6";
+        break;
+      case 3:
+        rank = "5";
+        break;
+      case 4:
+        rank = "4";
+        break;
+      case 5:
+        rank = "3";
+        break;
+      case 6:
+        rank = "2";
+        break;
+      case 7:
+        rank = "1";
+        break;
+    }
+    switch (col) {
+      case 0:
+        file = "a";
+        break;
+      case 1:
+        file = "b";
+        break;
+      case 2:
+        file = "c";
+        break;
+      case 3:
+        file = "d";
+        break;
+      case 4:
+        file = "e";
+        break;
+      case 5:
+        file = "f";
+        break;
+      case 6:
+        file = "g";
+        break;
+      case 7:
+        file = "h";
+        break;
+    }
+    return `${file}${rank}`;
+  },
+  getModel(color, type) {
+    let model = null;
+    switch (type) {
+      case "r":
+        model = (color === COLOR.B) ? rookB : rookW;
+        break;
+      case "n":
+        model = (color === COLOR.B) ? knightB : knightW;
+        break;
+      case "b":
+        model = (color === COLOR.B) ? bishopB : bishopW;
+        break;
+      case "q":
+        model = (color === COLOR.B) ? queenB : queenW;
+        break;
+      case "k":
+        model = (color === COLOR.B) ? kingB : kingW;
+        break;
+      case "p":
+        model = (color === COLOR.B) ? pawnB : pawnW;
+        break;
+    }
+    return model;
+  },
   buildPieces(pieces) {
     pieces.forEach(piece => {
-      const pieceMeta = `type: ${piece.type}; color: ${piece.color}; initialSquare: ${piece.initialSquare}; model: ${
-        piece.model
-      };`;
+      const pieceMeta = `type: ${piece.type}; color: ${piece.color}; initialSquare: ${piece.initialSquare}; model: ${piece.model};`;
       const tempPiece = document.createElement("a-entity");
       tempPiece.setAttribute("chess-piece", pieceMeta);
       this.el.appendChild(tempPiece);

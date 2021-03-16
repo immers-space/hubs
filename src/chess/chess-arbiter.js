@@ -1,6 +1,7 @@
 import * as PositioningUtils from "./positioning-utils";
 import * as GameNetwork from "./game-network";
 import * as Chess from "chess.js";
+import { GAME_MODE, COLOR } from './game-constants';
 
 AFRAME.registerSystem("chess-arbiter", {
   init() {
@@ -17,6 +18,7 @@ AFRAME.registerSystem("chess-arbiter", {
       this.handleChatCommand(command, params);
     });
     this.startGame();
+    this.setGameMode();
     GameNetwork.setupNetwork(this.sceneEl);
     this.addEventListeners();
   },
@@ -67,8 +69,29 @@ AFRAME.registerSystem("chess-arbiter", {
   },
 
   resetNetworkedGame(fen = "") {
-    GameNetwork.broadcastData("chess::reset-game", {});
+    GameNetwork.broadcastData("chess::reset-game", { fen });
     this.resetGame(fen);
+    this.setGameMode(fen);
+  },
+
+  setGameMode(fen = "") {
+    const gameMode = (fen) ? GAME_MODE.FEN : GAME_MODE.STANDARD; 
+    GameNetwork.broadcastData("chess::set-game-mode", { gameMode });
+    this.sceneEl.emit("setGameMode", { gameMode });
+  },
+
+  loadPGN(pgn) {
+    pgn = pgn.replaceAll('] [', ']\n[');
+    pgn = pgn.replace('] 1.', ']\n\n1.');
+    this.chessEngine.load_pgn(pgn);
+  },
+
+  loadNetworkedPGN(pgn) {
+    const gameMode = GAME_MODE.PGN;
+    GameNetwork.broadcastData("chess::set-game-mode", { gameMode });
+    this.sceneEl.emit("setGameMode", { gameMode });
+    this.loadPGN(pgn)
+    GameNetwork.broadcastData("chess::load-pgn", { pgn });
   },
 
   copyPGN() {
@@ -85,7 +108,7 @@ AFRAME.registerSystem("chess-arbiter", {
     const id = GameNetwork.getMyId();
     const profile = window.APP.store.state.profile;
     const color = params[0];
-    const fen = params.join(" ");
+    const notation = params.join(" ");
     switch (command) {
       case "play":
         this.playAs(color, id, profile);
@@ -93,14 +116,17 @@ AFRAME.registerSystem("chess-arbiter", {
       case "reset":
         this.resetNetworkedGame();
         break;
-      case "w":
-        this.playAs("white", id, profile);
+      case COLOR.W:
+        this.playAs(COLOR.WHITE, id, profile);
         break;
-      case "b":
-        this.playAs("black", id, profile);
+      case COLOR.B:
+        this.playAs(COLOR.BLACK, id, profile);
         break;
       case "fen":
-        this.resetNetworkedGame(fen);
+        this.resetNetworkedGame(notation);
+        break;
+      case "pgn":
+        this.loadNetworkedPGN(notation);
         break;
     }
   },
@@ -245,14 +271,14 @@ AFRAME.registerSystem("chess-arbiter", {
       this.squareCaptured(move.to);
     }
     if (isQueensideCastle) {
-      const fromSquare = move.color === "b" ? "a8" : "a1";
-      const toSquare = move.color === "b" ? "d8" : "d1";
+      const fromSquare = move.color === COLOR.B ? "a8" : "a1";
+      const toSquare = move.color === COLOR.B ? "d8" : "d1";
       const rook = PositioningUtils.getPieceFromSquare(fromSquare);
       this.moveTo(rook, toSquare);
     }
     if (isKingsideCastle) {
-      const fromSquare = move.color === "b" ? "h8" : "h1";
-      const toSquare = move.color === "b" ? "f8" : "f1";
+      const fromSquare = move.color === COLOR.B ? "h8" : "h1";
+      const toSquare = move.color === COLOR.B ? "f8" : "f1";
       const rook = PositioningUtils.getPieceFromSquare(fromSquare);
       this.moveTo(rook, toSquare);
     }
@@ -281,7 +307,7 @@ AFRAME.registerSystem("chess-arbiter", {
       type: "q",
       color,
       initialSquare,
-      model: color === "w" ? chessSet.queenW : chessSet.queenB,
+      model: color === COLOR.W ? chessSet.queenW : chessSet.queenB,
       sendTo: square
     };
     const newPiece = document.createElement("a-entity");
@@ -292,7 +318,7 @@ AFRAME.registerSystem("chess-arbiter", {
   teleportPlayer(color) {
     const squareSize = this.chessGame.getAttribute("chess-game").squareSize;
     this.sceneEl.systems["hubs-systems"].characterController.enableFly(true);
-    if (color === "white") {
+    if (color === COLOR.WHITE) {
       const destinationX = PositioningUtils.getPositionFromFile("e") - squareSize / 2;
       const destinationY = squareSize * 4;
       const destinationZ = PositioningUtils.getPositionFromRank("4") + squareSize * 5;
@@ -304,7 +330,7 @@ AFRAME.registerSystem("chess-arbiter", {
       // TODO: Replace with teleport waypoint
       const q = new THREE.Quaternion(-0.3046977306369239, 0.06475573883689406, 0.02076899796372855, 0.9500182292756172);
       this.sceneEl.querySelector("#avatar-pov-node").object3D.setRotationFromQuaternion(q);
-    } else if (color === "black") {
+    } else if (color === COLOR.BLACK) {
       const destinationX = PositioningUtils.getPositionFromFile("e") - squareSize / 2;
       const destinationY = squareSize * 4;
       const destinationZ = PositioningUtils.getPositionFromRank("8") - squareSize * 4;
