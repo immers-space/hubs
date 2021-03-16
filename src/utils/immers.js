@@ -4,7 +4,7 @@ import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.5.0");
+console.log("immers.space client v0.6.0");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
@@ -93,15 +93,6 @@ export function updateProfile(actorObj, update) {
     to: actorObj.followers
   };
   return postActivity(actorObj.outbox, activity);
-}
-
-export function follow(actorObj, targetId) {
-  return postActivity(actorObj.outbox, {
-    type: "Follow",
-    actor: actorObj.id,
-    object: targetId,
-    to: targetId
-  });
 }
 
 export function arrive(actorObj) {
@@ -361,21 +352,36 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
 
   // friends list
   let friendsCol;
+  const setFriendState = (immersId, el) => {
+    // friends not loaded or is myself
+    if (!friendsCol || immersId === actorObj.id) {
+      return;
+    }
+    const friendStatus = friendsCol.orderedItems.find(act => act.actor.id === immersId);
+    // inReplyTo on a follow means it is a followback, don't show accept prompt (already a friend)
+    if (friendStatus?.type === "Follow" && !friendStatus?.inReplyTo) {
+      el.removeState("immers-follow-friend");
+      el.removeState("immers-follow-none");
+      el.addState("immers-follow-request");
+    } else if (friendStatus && friendStatus.type !== "Reject") {
+      el.removeState("immers-follow-request");
+      el.removeState("immers-follow-none");
+      el.addState("immers-follow-friend");
+    } else {
+      el.removeState("immers-follow-request");
+      el.removeState("immers-follow-friend");
+      el.addState("immers-follow-none");
+    }
+  };
   const updateFriends = async () => {
     if (store.state.profile.id) {
       const profile = store.state.profile;
       friendsCol = await getFriends(profile);
       activities.friends = friendsCol.orderedItems;
-      remountUI({ friends: friendsCol.orderedItems, handle: profile.handle });
+      remountUI({ friends: friendsCol.orderedItems.filter(act => act.type !== "Reject"), handle: profile.handle });
       // update follow button for new friends
       const players = window.APP.componentRegistry["player-info"];
-      if (players) {
-        players.forEach(infoComp => {
-          if (friendsCol.orderedItems.some(act => act.actor.id === infoComp.data.immersId)) {
-            infoComp.el.addState("friend");
-          }
-        });
-      }
+      players?.forEach(infoComp => setFriendState(infoComp.data.immersId, infoComp.el));
     }
   };
   updateFriends();
@@ -404,20 +410,25 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
   });
 
   // entity interactions
-  scene.addEventListener("immers-id-changed", event => {
-    if (!friendsCol) {
-      return;
-    }
-    if (friendsCol.orderedItems.some(act => act.actor.id === event.detail)) {
-      event.target.addState("friend");
-    }
-  });
+  scene.addEventListener("immers-id-changed", event => setFriendState(event.detail, event.target));
 
   scene.addEventListener("immers-follow", event => {
     if (!event.detail) {
       return;
     }
-    follow(store.state.profile, event.detail).catch(err => console.err("Error sending follow request:", err.message));
+    activities.follow(event.detail).catch(err => console.error("Error sending follow request:", err.message));
+  });
+  scene.addEventListener("immers-follow-accept", event => {
+    const follow = friendsCol.orderedItems.find(act => act.actor.id === event.detail && act.type === "Follow");
+    if (!follow) {
+      return;
+    }
+    activities.accept(follow).catch(err => console.err("Error sending follow accept:", err.message));
+  });
+  // unfriend
+  scene.addEventListener("immers-follow-reject", event => {
+    // server converts actorId to followId for reject object
+    activities.reject(event.detail, event.detail).catch(err => console.error("Error sending unfollow:", err.message));
   });
 
   setupMonetization(hubScene, localPlayer);

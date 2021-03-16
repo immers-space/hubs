@@ -114,7 +114,7 @@ AFRAME.registerComponent("player-info", {
 
   update(oldData) {
     this.applyProperties();
-    if (this.data.immersId !== oldData.immersId) {
+    if (oldData.immersId !== undefined && this.data.immersId !== oldData.immersId) {
       this.el.emit("immers-id-changed", this.data.immersId);
       this.el.sceneEl.emit("immers-player-monetization", {
         monetized: false,
