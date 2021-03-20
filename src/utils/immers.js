@@ -328,12 +328,8 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
       }
     }
   });
-  let hasArrived;
   immerSocket.on("connect", () => {
-    if (hasArrived) {
-      return;
-    }
-    hasArrived = true;
+    // will also send on reconnect to ensure you show as online
     arrive(actorObj);
     immerSocket.emit("entered", {
       // prepare a leave activity to be fired on disconnect
