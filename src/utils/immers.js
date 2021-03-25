@@ -4,7 +4,7 @@ import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.6.0");
+console.log("immers.space client v0.7.0");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
@@ -328,12 +328,8 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
       }
     }
   });
-  let hasArrived;
   immerSocket.on("connect", () => {
-    if (hasArrived) {
-      return;
-    }
-    hasArrived = true;
+    // will also send on reconnect to ensure you show as online
     arrive(actorObj);
     immerSocket.emit("entered", {
       // prepare a leave activity to be fired on disconnect
