@@ -3,7 +3,6 @@ import "./webxr-bypass-hacks";
 import configs from "./utils/configs";
 import "./utils/theme";
 import "@babel/polyfill";
-import * as immers from "./utils/immers";
 
 console.log(`App version: ${process.env.BUILD_VERSION || "?"}`);
 
@@ -165,6 +164,7 @@ import "./gltf-component-mappings";
 import { App } from "./App";
 import MediaDevicesManager from "./utils/media-devices-manager";
 import { platformUnsupported } from "./support";
+import * as immers from "./utils/immers";
 
 window.APP = new App();
 window.APP.RENDER_ORDER = {

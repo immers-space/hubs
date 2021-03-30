@@ -135,7 +135,7 @@
     "resize-observer-polyfill": "^1.5.1",
     "screenfull": "^4.0.1",
     "semver": "^7.3.2",
-    "socket.io-client": "^2.3.0",
+    "socket.io-client": "^4.0.0",
     "three": "github:mozillareality/three.js#hubs/master",
     "three-ammo": "^1.0.12",
     "three-bmfont-text": "github:mozillareality/three-bmfont-text#hubs/master",
