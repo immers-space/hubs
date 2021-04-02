@@ -7,6 +7,7 @@ import { ReactComponent as EnterIcon } from "../icons/Enter.svg";
 import { ReactComponent as VRIcon } from "../icons/VR.svg";
 import { ReactComponent as ShowIcon } from "../icons/Show.svg";
 import { ReactComponent as SettingsIcon } from "../icons/Settings.svg";
+import { ReactComponent as WMIcon } from "../icons/wm-icon.svg";
 import styles from "./RoomEntryModal.scss";
 import styleUtils from "../styles/style-utils.scss";
 import { useCssBreakpoints } from "react-use-css-breakpoints";
@@ -26,6 +27,8 @@ export function RoomEntryModal({
   onSpectate,
   showOptions,
   onOptions,
+  showMonetizationRequired,
+  showMonetized,
   ...rest
 }) {
   const breakpoint = useCssBreakpoints();
@@ -69,6 +72,25 @@ export function RoomEntryModal({
               </span>
             </Button>
           )}
+          <div className={styles.webmon}>
+            {!showJoinRoom && <p>This space has no more free slots available.</p>}
+            <WMIcon />
+            {showMonetized && (
+              <div>
+                Thanks for paying! You can join this space even if it is full. Search for this icon in the space to find
+                other premium features.
+              </div>
+            )}
+            {showMonetizationRequired && (
+              <div>
+                <a href="https://web.immers.space/monetization-required/" target="_blank" rel="noopener">
+                  Sign up for Web Monetization
+                </a>{" "}
+                to unlock premium features and join spaces even when they are full.
+              </div>
+            )}
+          </div>
+
           {showOptions &&
             breakpoint !== "sm" && (
               <>
@@ -99,7 +121,9 @@ RoomEntryModal.propTypes = {
   showSpectate: PropTypes.bool,
   onSpectate: PropTypes.func,
   showOptions: PropTypes.bool,
-  onOptions: PropTypes.func
+  onOptions: PropTypes.func,
+  showMonetizationRequired: PropTypes.bool,
+  showMonetized: PropTypes.bool
 };
 
 RoomEntryModal.defaultProps = {
