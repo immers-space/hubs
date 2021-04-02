@@ -4,7 +4,7 @@ import { fetchAvatar } from "./avatar-utils";
 import { setupMonetization } from "./immers/monetization";
 import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.7.0");
+console.log("immers.space client v0.7.1");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
@@ -426,7 +426,7 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     activities.reject(event.detail, event.detail).catch(err => console.error("Error sending unfollow:", err.message));
   });
 
-  setupMonetization(hubScene, localPlayer);
+  setupMonetization(hubScene, localPlayer, remountUI);
 
   // news feed and chat integration, behind a feature switch as it needs the new hubs ui
   if (messageDispatch) {
