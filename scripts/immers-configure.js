@@ -1,9 +1,8 @@
 import { readFileSync, existsSync } from "fs";
-import yargs from "yargs";
-import { hideBin } from "yargs/helpers";
-const { immer, wallet } = yargs(hideBin(process.argv)).argv;
+// use env due to complications of reading $ in payment pointer via cli
+const { domain: immer, monetizationPointer: wallet } = process.env
 if (!immer || !wallet) {
-  console.log("Missing required CLI arguments: immer, wallet");
+  console.log("Missing required ENV: domain, monetizationPointer");
   process.exit(1);
 }
 if (!existsSync(".ret.credentials")) {
@@ -30,19 +29,24 @@ const { host, token } = JSON.parse(readFileSync(".ret.credentials"));
       // fetch remote avatars
       cors_origins: "*"
     },
+    uploads: {
+      // keep media for 6 months so it remains in chat history
+      ttl: 15778476
+    },
     extra_html: {}
   };
   // add local immers server env variable and web monetizatoin payment pointer to all pages
   const extraHeader = `<meta name="env:immers_server" content="${immer}"><meta name="monetization" content="${wallet}">`;
   ["extra_avatar_html", "extra_index_html", "extra_room_html", "extra_scene_html"].forEach(setting => {
-    cfg[setting] = extraHeader;
+    cfg.extra_html[setting] = extraHeader;
   });
-
   await fetch(`https://${host}/api/ita/configs/reticulum`, {
     headers,
     method: "PATCH",
     body: JSON.stringify(cfg)
-  });
+  })
+    .then(res => { if (!res.ok) { throw new Error(`Response ${res.status}`) } })
+    .catch(err => console.log("Error updating server config: ", err.message));
 
   // App Settings
   await fetch(`https://${host}/api/v1/app_configs`, {
@@ -50,9 +54,11 @@ const { host, token } = JSON.parse(readFileSync(".ret.credentials"));
     method: "POST",
     body: JSON.stringify({
       features: {
-        // disallow hubs/reticulum accounts to enfore monetized features and avoid confusion with immers accounts
+        // disallow hubs/reticulum accounts to enforce monetized features and avoid confusion with immers accounts
         disable_sign_up: true
       }
     })
-  });
+  })
+    .then(res => { if (!res.ok) { throw new Error(`Response ${res.status}`) } })
+    .catch(err => console.log("Error updating server config: ", err.message));
 })();
