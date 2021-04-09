@@ -6,6 +6,9 @@ import tar from "tar";
 import ora from "ora";
 import FormData from "form-data";
 import path from "path";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
+const skipCI = yargs(hideBin(process.argv)).argv.skipCI;
 
 if (!existsSync(".ret.credentials")) {
   console.log("Not logged in, so cannot deploy. To log in, run npm run login.");
@@ -60,6 +63,9 @@ const getTs = (() => {
   step.text = "Building Client.";
 
   await new Promise((resolve, reject) => {
+    if (skipCI) {
+      return resolve();
+    }
     exec("npm ci", {}, err => {
       if (err) reject(err);
       resolve();
@@ -76,6 +82,9 @@ const getTs = (() => {
   step.text = "Building Admin Console.";
 
   await new Promise((resolve, reject) => {
+    if (skipCI) {
+      return resolve();
+    }
     exec("npm ci", { cwd: "./admin" }, err => {
       if (err) reject(err);
       resolve();
