@@ -15,7 +15,6 @@ import { useMaintainScrollPosition } from "../misc/useMaintainScrollPosition";
 import { spawnChatMessage } from "../chat-message";
 import { discordBridgesForPresences } from "../../utils/phoenix-utils";
 import { useIntl } from "react-intl";
-import { ImmersChatMessage, ImmersMoreHistoryButton } from "./ImmersReact";
 
 const ChatContext = createContext({ messageGroups: [], sendMessage: () => {} });
 
@@ -43,29 +42,6 @@ function processChatMessage(messageGroups, newMessage) {
   const now = Date.now();
   const { name, sent, sessionId, ...messageProps } = newMessage;
 
-  if (messageProps.isImmersFeed) {
-    // insert according to timestamp
-    const newMessageGroups = messageGroups.slice();
-    const i = newMessageGroups.findIndex(group => messageProps.timestamp < group.timestamp);
-    newMessageGroups.splice(i === -1 ? newMessageGroups.length : i, 0, {
-      id: uniqueMessageId++,
-      isImmersFeed: messageProps.isImmersFeed,
-      isFriend: messageProps.isFriend,
-      timestamp: messageProps.timestamp,
-      sent: sent,
-      sender: name,
-      icon: messageProps.icon,
-      senderSessionId: sessionId,
-      context: messageProps.context,
-      immer: messageProps.immer,
-      messages: [{ id: uniqueMessageId++, ...messageProps }]
-    });
-    return newMessageGroups;
-  }
-  // local chat is ignored in favor of immers feed which includes it
-  if (!sent) {
-    return messageGroups;
-  }
   if (shouldCreateNewMessageGroup(messageGroups, newMessage, now)) {
     return [
       ...messageGroups,
@@ -276,12 +252,9 @@ export function ChatSidebarContainer({ scene, canSpawnMessages, presences, occup
   return (
     <ChatSidebar onClose={onClose}>
       <ChatMessageList ref={listRef} onScroll={onScrollList}>
-        <ImmersMoreHistoryButton />
-        {messageGroups.map(({ id, systemMessage, isImmersFeed, ...rest }) => {
+        {messageGroups.map(({ id, systemMessage, ...rest }) => {
           if (systemMessage) {
             return <SystemMessage key={id} {...rest} />;
-          } else if (isImmersFeed) {
-            return <ImmersChatMessage key={id} {...rest} />;
           } else {
             return <ChatMessageGroup key={id} {...rest} />;
           }
