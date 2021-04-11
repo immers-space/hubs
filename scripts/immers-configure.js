@@ -36,7 +36,7 @@ const { host, token } = JSON.parse(readFileSync(".ret.credentials"));
     extra_html: {}
   };
   // add local immers server env variable and web monetizatoin payment pointer to all pages
-  const extraHeader = `<meta name="env:immers_server" content="${immer}"><meta name="monetization" content="${wallet}">`;
+  const extraHeader = `<meta name="env:immers_server" content="https://${immer}"><meta name="monetization" content="${wallet}">`;
   ["extra_avatar_html", "extra_index_html", "extra_room_html", "extra_scene_html"].forEach(setting => {
     cfg.extra_html[setting] = extraHeader;
   });
