@@ -1,4 +1,5 @@
 import "./immers-follow-button";
+import "./immers-share-button";
 import "./spoke-tagger";
 import "./monetization-visible";
 import "./monetization-invisible";
