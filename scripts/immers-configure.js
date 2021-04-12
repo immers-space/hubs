@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "fs";
 // use env due to complications of reading $ in payment pointer via cli
-const { domain: immer, monetizationPointer: wallet } = process.env
+const { domain: immer, monetizationPointer: wallet } = process.env;
 if (!immer || !wallet) {
   console.log("Missing required ENV: domain, monetizationPointer");
   process.exit(1);
@@ -45,7 +45,11 @@ const { host, token } = JSON.parse(readFileSync(".ret.credentials"));
     method: "PATCH",
     body: JSON.stringify(cfg)
   })
-    .then(res => { if (!res.ok) { throw new Error(`Response ${res.status}`) } })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`Response ${res.status}`);
+      }
+    })
     .catch(err => console.log("Error updating server config: ", err.message));
 
   // App Settings
@@ -59,6 +63,11 @@ const { host, token } = JSON.parse(readFileSync(".ret.credentials"));
       }
     })
   })
-    .then(res => { if (!res.ok) { throw new Error(`Response ${res.status}`) } })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`Response ${res.status}`);
+      }
+    })
     .catch(err => console.log("Error updating server config: ", err.message));
+  process.exit(0);
 })();

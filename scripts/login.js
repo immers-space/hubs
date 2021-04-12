@@ -16,7 +16,7 @@ const ask = q => new Promise(res => rl.question(q, res));
 (async () => {
   console.log("Logging into Hubs Cloud.\n");
   const host = argv.host || (await ask("Host (eg hubs.mozilla.com): "));
-  if (!host) {
+  if (!host || host === true) {
     console.log("Invalid host.");
     process.exit(1);
   }

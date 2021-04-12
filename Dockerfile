@@ -11,4 +11,4 @@ RUN npm ci
 WORKDIR /usr/src/hubs
 COPY . .
 
-CMD [ "dockerdeploy.sh" ]
+CMD [ "/bin/bash", "dockerdeploy.sh" ]
