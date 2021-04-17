@@ -7,6 +7,7 @@ AFRAME.registerComponent("block-button", {
   init() {
     this.onClick = () => {
       this.block(this.owner);
+      this.el.emit("immers-block", { clientId: this.owner });
     };
     NAF.utils.getNetworkedEntity(this.el).then(networkedEl => {
       this.owner = networkedEl.components.networked.data.owner;
