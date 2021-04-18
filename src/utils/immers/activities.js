@@ -139,58 +139,71 @@ export default class Activities {
     });
   }
 
-  note(content, to, isPublic, summary) {
+  note(content, to, audience, summary) {
     const obj = {
       content,
       type: "Note",
       attributedTo: this.actor.id,
       context: this.place,
-      to: [this.actor.followers, ...to]
+      to: to.slice()
     };
     if (summary) {
       obj.summary = summary;
     }
-    if (isPublic) {
+    if (audience === "friends" || audience === "public") {
+      obj.to.push(this.actor.followers);
+    }
+    if (audience === "public") {
       obj.to.push(Activities.PublicAddress);
     }
     return this.postActivity(obj);
   }
 
-  image(url, to, isPublic, summary) {
+  image(url, to, audience, summary) {
     const obj = {
       url,
       type: "Image",
       attributedTo: this.actor.id,
       context: this.place,
-      to: [this.actor.followers, ...to]
+      to: to.slice()
     };
     if (summary) {
       obj.summary = summary;
     }
-    if (isPublic) {
+    if (audience === "friends" || audience === "public") {
+      obj.to.push(this.actor.followers);
+    }
+    if (audience === "public") {
       obj.to.push(Activities.PublicAddress);
     }
     return this.postActivity(obj);
   }
 
-  video(url, to, isPublic, summary) {
+  video(url, to, audience, summary) {
     const obj = {
       url,
       type: "Video",
       attributedTo: this.actor.id,
       context: this.place,
-      to: [this.actor.followers, ...to]
+      to: to.slice()
     };
     if (summary) {
       obj.summary = summary;
     }
-    if (isPublic) {
+    if (audience === "friends" || audience === "public") {
+      obj.to.push(this.actor.followers);
+    }
+    if (audience === "public") {
       obj.to.push(Activities.PublicAddress);
     }
     return this.postActivity(obj);
   }
 
   activityAsChat(activity, outbox = false) {
+    if (outbox) {
+      // avoid apex api inconsistency that returns actor as id string for direct activity fetch
+      activity.actor = this.actor;
+    }
     const message = {
       isImmersFeed: true,
       isFriend: this.friends.some(status => status.actor.id === activity.actor.id),

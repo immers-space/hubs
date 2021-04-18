@@ -1,0 +1,12 @@
+node_modules
+certs
+dist
+admin/node_modules
+admin/certs
+admin/dist
+npm-debug.log
+.vscode
+.cache
+.parcel-cache
+.env
+.ret.credentials
