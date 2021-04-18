@@ -1492,10 +1492,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       sent: session_id === socket.params().session_id
     };
 
-    // replaced by immers feed
-    // if (scene.is("vr-mode")) {
-    //   createInWorldLogMessage(incomingMessage);
-    // }
+    if (scene.is("vr-mode")) {
+      createInWorldLogMessage(incomingMessage);
+    }
 
     messageDispatch.receive(incomingMessage);
   });

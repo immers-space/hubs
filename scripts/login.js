@@ -5,6 +5,9 @@ import AuthChannel from "../src/utils/auth-channel";
 import configs from "../src/utils/configs.js";
 import { Socket } from "phoenix-channels";
 import { writeFileSync } from "fs";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
+const argv = yargs(hideBin(process.argv)).argv;
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -12,8 +15,8 @@ const ask = q => new Promise(res => rl.question(q, res));
 
 (async () => {
   console.log("Logging into Hubs Cloud.\n");
-  const host = await ask("Host (eg hubs.mozilla.com): ");
-  if (!host) {
+  const host = argv.host || (await ask("Host (eg hubs.mozilla.com): "));
+  if (!host || host === true) {
     console.log("Invalid host.");
     process.exit(1);
   }
@@ -37,8 +40,9 @@ const ask = q => new Promise(res => rl.question(q, res));
   const socket = await connectToReticulum(false, null, Socket);
   const store = new Store();
 
-  const email = await ask("Your admin account email (eg admin@yoursite.com): ");
+  const email = argv.email || (await ask("Your admin account email (eg admin@yoursite.com): "));
   console.log(`Logging into ${host} as ${email}. Click on the link in your email to continue.`);
+
   const authChannel = new AuthChannel(store);
   authChannel.setSocket(socket);
   const { authComplete } = await authChannel.startAuthentication(email);

@@ -23,17 +23,20 @@ const monetization = {
 };
 let localPlayer;
 let hubScene;
+let updateUI;
 
 // sync player's monetization status with room via player-info component
 function onMonetizationStart() {
   monetization.state = "started";
   localPlayer.setAttribute("player-info", { monetized: true });
   hubScene.emit("immers-monetization-started");
+  updateUI({ isMonetized: true });
 }
 function onMonetizationStop() {
   monetization.state = "stopped";
   localPlayer.setAttribute("player-info", { monetized: false });
   hubScene.emit("immers-monetization-stopped");
+  updateUI({ isMonetized: false });
 }
 
 // tallies total amount paid during curent session
@@ -64,9 +67,10 @@ function onSceneLoaded() {
 
 // wait until scene is fully loaded to trigger monetization events so creators don't
 // have to worry about whether entities are loaded
-export function setupMonetization(scene, player) {
+export function setupMonetization(scene, player, remountUI) {
   hubScene = scene;
   localPlayer = player;
+  updateUI = remountUI;
   if (hubScene.is("loaded")) {
     onSceneLoaded();
   } else {

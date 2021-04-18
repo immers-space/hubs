@@ -1,11 +1,13 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import classNames from "classnames";
+import "web-monetization-polyfill";
 import configs from "../../utils/configs";
 import { CreateRoomButton } from "./CreateRoomButton";
 import { PWAButton } from "./PWAButton";
 import { useFavoriteRooms } from "./useFavoriteRooms";
 import { usePublicRooms } from "./usePublicRooms";
+import { usePremiumScenes } from "./usePremiumScenes";
 import styles from "./HomePage.scss";
 import { AuthContext } from "../auth/AuthContext";
 import { createAndRedirectToNewHub } from "../../utils/phoenix-utils";
@@ -16,13 +18,16 @@ import { scaledThumbnailUrlFor } from "../../utils/media-url-utils";
 import { Column } from "../layout/Column";
 import { Button } from "../input/Button";
 import { Container } from "../layout/Container";
+import { ReactComponent as WMIcon } from "../icons/wm-icon.svg";
 
 export function HomePage() {
   const auth = useContext(AuthContext);
   const intl = useIntl();
+  const [isMonetized, setIsMonetized] = useState(false);
 
   const { results: favoriteRooms } = useFavoriteRooms();
   const { results: publicRooms } = usePublicRooms();
+  const { results: premiumScenes } = usePremiumScenes();
 
   const sortedFavoriteRooms = Array.from(favoriteRooms).sort((a, b) => b.member_count - a.member_count);
   const sortedPublicRooms = Array.from(publicRooms).sort((a, b) => b.member_count - a.member_count);
@@ -45,6 +50,19 @@ export function HomePage() {
       createAndRedirectToNewHub(null, null, true);
     }
   }, []);
+
+  useEffect(() => {
+    // save in closure in case this changes between renders
+    const monetization = document.monetization;
+    const onMonetizationStart = () => setIsMonetized(true);
+    const onMonetizationStop = () => setIsMonetized(false);
+    monetization.addEventListener("monetizationstart", onMonetizationStart);
+    monetization.addEventListener("monetizationstop", onMonetizationStop);
+    return () => {
+      monetization.removeEventListener("monetizationstart", onMonetizationStart);
+      monetization.removeEventListener("monetizationstop", onMonetizationStop);
+    };
+  });
 
   const canCreateRooms = !configs.feature("disable_room_creation") || auth.isAdmin;
 
@@ -74,6 +92,46 @@ export function HomePage() {
           </div>
         </div>
       </Container>
+      {premiumScenes.length > 0 && (
+        <Container className={styles.roomsContainer}>
+          <h3 className={styles.scenesHeading}>
+            <WMIcon />
+            <FormattedMessage id="home-page.premium-scenes" defaultMessage="Premium Scenes" />
+          </h3>
+          <Column grow padding className={styles.rooms}>
+            {isMonetized ? (
+              <div>Thanks for paying! You can also create rooms with these exclusive scenes:</div>
+            ) : (
+              <div>
+                <a href="https://web.immers.space/monetization-required/" target="_blank" rel="noopener">
+                  Sign up for Web Monetization
+                </a>{" "}
+                to unlock exclusive scenes.
+              </div>
+            )}
+            <MediaGrid center>
+              {premiumScenes.map(scene => {
+                // obfuscate the scene url as you can create a room from there
+                scene.url = "#";
+                const onClick = isMonetized
+                  ? () => createAndRedirectToNewHub(null, scene.id, false)
+                  : e => e.preventDefault();
+                return (
+                  <MediaTile
+                    className={classNames({ [styles.sceneDisabled]: !isMonetized })}
+                    key={scene.id}
+                    entry={scene}
+                    processThumbnailUrl={(entry, width, height) =>
+                      scaledThumbnailUrlFor(entry.images.preview.url, width, height)
+                    }
+                    onClick={onClick}
+                  />
+                );
+              })}
+            </MediaGrid>
+          </Column>
+        </Container>
+      )}
       {configs.feature("show_feature_panels") && (
         <Container className={classNames(styles.features, styles.colLg, styles.centerLg)}>
           <Column padding gap="xl" className={styles.card}>

@@ -42,6 +42,14 @@
   }
 }
 
+:local(.small) {
+  width: 48px;
+}
+
+:local(.small) :local(.icon-container) {
+  flex-shrink: 0;
+}
+
 :local(.large) :local(.icon-container) {
   width: 96px;
   height: 96px;
