@@ -1,10 +1,12 @@
 import io from "socket.io-client";
 import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
+import { SOUND_CHAT_MESSAGE } from "../systems/sound-effects-system";
 import { setupMonetization } from "./immers/monetization";
+import immersMessageDispatch from "./immers/immers-message-dispatch";
 import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.7.0");
+console.log("immers.space client v0.7.1");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
@@ -426,15 +428,15 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     activities.reject(event.detail, event.detail).catch(err => console.error("Error sending unfollow:", err.message));
   });
 
-  setupMonetization(hubScene, localPlayer);
+  setupMonetization(hubScene, localPlayer, remountUI);
 
   // news feed and chat integration, behind a feature switch as it needs the new hubs ui
-  if (messageDispatch) {
+  if (createInWorldLogMessage) {
     // fetch news feed
     const updateFeed = async () => {
       const { messages, more } = await activities.feedAsChat();
       messages.forEach(detail => {
-        messageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
+        immersMessageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
       });
       return more;
     };
@@ -450,20 +452,18 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
       activity = JSON.parse(activity);
       const message = activities.activityAsChat(activity);
       if (message.body) {
-        messageDispatch.dispatchEvent(new CustomEvent("message", { detail: message }));
+        if (message.type !== "activity") {
+          // play sound for chat/image/video updates
+          scene.systems["hubs-systems"].soundEffectsSystem.playSoundOneShot(SOUND_CHAT_MESSAGE);
+        }
+        immersMessageDispatch.dispatchEvent(new CustomEvent("message", { detail: message }));
         if (scene.is("vr-mode")) {
           createInWorldLogMessage(message);
         }
       }
     });
-    // intercept outgoing messages and post to immers space feed
-    messageDispatch.addEventListener("message", ({ detail: message }) => {
-      // skip if incoming message or loaded from history
-      if (!message.sent || message.isImmersFeed) {
-        return;
-      }
-      // Send to immers id of everyone in room so all chat goes through immers and
-      // we don't have to worry about duplicate messages appearing in chat
+    immersMessageDispatch.setDispatchHandler(message => {
+      // include local room occupants
       const localAudience = Object.values(window.APP.hubChannel.presence.state)
         .map(presence => presence.metas[presence.metas.length - 1]?.profile.id)
         .filter(id => id && id !== actorObj.id);
@@ -471,19 +471,29 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
       let task;
       switch (message.type) {
         case "chat":
-          task = activities.note(message.body, localAudience, true, null);
+          task = activities.note(message.body, localAudience, message.audience, null);
           break;
         case "image":
         case "photo":
-          task = activities.image(message.body.src, localAudience, true, null);
+          task = activities.image(message.body.src, localAudience, message.audience, null);
           break;
         case "video":
-          task = activities.video(message.body.src, localAudience, true, null);
+          task = activities.video(message.body.src, localAudience, message.audience, null);
           break;
         default:
-          console.log("Chat message not shared", message);
+          return console.log("Chat message not shared", message);
       }
-      task.catch(err => console.error(`Error sharing chat: ${err.message}`));
+      task
+        .then(async postResult => {
+          if (!postResult.ok) {
+            throw new Error(postResult.status);
+          }
+          // fetch the newly created activity and feed it back into chat system so your outgoing messages appear in panel
+          const chat = activities.activityAsChat(await getObject(postResult.headers.get("Location")), true);
+          immersMessageDispatch.dispatchEvent(new CustomEvent("message", { detail: chat }));
+        })
+        .catch(err => console.error(`Error sharing chat: ${err.message}`));
     });
+    remountUI({ immersMessageDispatch });
   }
 }
