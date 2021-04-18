@@ -143,6 +143,25 @@
   font-size: 24px;
   margin-bottom: 16px;
 }
+
+:local(.scenes-heading) {
+  margin-left: 10px;
+  font-size: 24px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  svg {
+    margin-right: 5px;
+  }
+}
+
+:local(.scene-disabled) {
+  filter: blur(2px);
+  cursor: not-allowed !important;
+  a {
+    cursor: not-allowed !important;
+  }
+}
  
 :local(.rooms) {
   background-color: theme.$recessed-bg;

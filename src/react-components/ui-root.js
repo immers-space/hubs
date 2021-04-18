@@ -146,6 +146,7 @@ class UIRoot extends Component {
     presences: PropTypes.object,
     friends: PropTypes.array,
     handle: PropTypes.string,
+    isMonetized: PropTypes.bool,
     sessionId: PropTypes.string,
     subscriptions: PropTypes.object,
     initialIsSubscribed: PropTypes.bool,
@@ -797,7 +798,8 @@ class UIRoot extends Component {
   renderEntryStartPanel = () => {
     const { hasAcceptedProfile, hasChangedName } = this.props.store.state.activity;
     const promptForNameAndAvatarBeforeEntry = this.props.hubIsBound ? !hasAcceptedProfile : !hasChangedName;
-
+    // monetized users can bypass room limit
+    const canEnter = !this.props.entryDisallowed || this.props.isMonetized;
     // TODO: What does onEnteringCanceled do?
     return (
       <>
@@ -805,7 +807,7 @@ class UIRoot extends Component {
           appName={configs.translation("app-name")}
           logoSrc={configs.image("logo")}
           roomName={this.props.hub.name}
-          showJoinRoom={!this.state.waitingOnAudio && !this.props.entryDisallowed}
+          showJoinRoom={!this.state.waitingOnAudio && canEnter}
           onJoinRoom={() => {
             if (promptForNameAndAvatarBeforeEntry || !this.props.forcedVREntryType) {
               this.setState({ entering: true });
@@ -821,9 +823,9 @@ class UIRoot extends Component {
               this.handleForceEntry();
             }
           }}
-          showEnterOnDevice={!this.state.waitingOnAudio && !this.props.entryDisallowed && !isMobileVR}
+          showEnterOnDevice={!this.state.waitingOnAudio && canEnter && !isMobileVR}
           onEnterOnDevice={() => this.attemptLink()}
-          showSpectate={!this.state.waitingOnAudio && !this.props.entryDisallowed}
+          showSpectate={!this.state.waitingOnAudio}
           onSpectate={() => this.setState({ watching: true })}
           showOptions={this.props.hubChannel.canOrWillIfCreator("update_hub")}
           onOptions={() => {
@@ -833,6 +835,8 @@ class UIRoot extends Component {
               SignInMessages.roomSettings
             );
           }}
+          showMonetizationRequired={!this.props.isMonetized}
+          showMonetized={this.props.isMonetized}
         />
         {!this.state.waitingOnAudio && (
           <EntryStartPanel
