@@ -302,10 +302,10 @@ ChatMessageList.propTypes = {
   children: PropTypes.node
 };
 
-export function ChatSidebar({ onClose, children, ...rest }) {
+export function ChatSidebar({ onClose, title, children, ...rest }) {
   return (
     <Sidebar
-      title={<FormattedMessage id="chat-sidebar.title" defaultMessage="Chat" />}
+      title={title || <FormattedMessage id="chat-sidebar.title" defaultMessage="Chat" />}
       beforeTitle={<CloseButton onClick={onClose} />}
       contentClassName={styles.content}
       {...rest}
@@ -317,6 +317,7 @@ export function ChatSidebar({ onClose, children, ...rest }) {
 
 ChatSidebar.propTypes = {
   onClose: PropTypes.func,
+  title: PropTypes.any,
   onScrollList: PropTypes.func,
   children: PropTypes.node,
   listRef: PropTypes.func
@@ -328,7 +329,9 @@ export function ChatToolbarButton(props) {
       {...props}
       icon={<ChatIcon />}
       preset="blue"
-      label={<FormattedMessage id="chat-toolbar-button" defaultMessage="Chat" />}
+      small
+      title="Chat with room occupants that is not saved"
+      label={<FormattedMessage id="chat-toolbar-button" defaultMessage="Local Chat" />}
     />
   );
 }

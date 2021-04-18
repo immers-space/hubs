@@ -94,6 +94,11 @@ import { TweetModalContainer } from "./room/TweetModalContainer";
 import { TipContainer, FullscreenTip } from "./room/TipContainer";
 import { SpectatingLabel } from "./room/SpectatingLabel";
 import { SignInMessages } from "./auth/SignInModal";
+import {
+  ImmersFeedContextProvider,
+  ImmersFeedSidebarContainer,
+  ImmersFeedToolbarButtonContainer
+} from "./room/ImmersFeedSidebarContainer";
 
 const avatarEditorDebug = qsTruthy("avatarEditorDebug");
 
@@ -1427,6 +1432,15 @@ class UIRoot extends Component {
                           onClose={() => this.setSidebar(null)}
                         />
                       )}
+                      {this.state.sidebarId === "feed" && (
+                        <ImmersFeedSidebarContainer
+                          presences={this.props.presences}
+                          occupantCount={this.occupantCount()}
+                          canSpawnMessages={entered && this.props.hubChannel.can("spawn_and_move_media")}
+                          scene={this.props.scene}
+                          onClose={() => this.setSidebar(null)}
+                        />
+                      )}
                       {this.state.sidebarId === "objects" && (
                         <ObjectsSidebarContainer
                           hubChannel={this.props.hubChannel}
@@ -1556,6 +1570,7 @@ class UIRoot extends Component {
                       </>
                     )}
                     <ChatToolbarButtonContainer onClick={() => this.toggleSidebar("chat")} />
+                    <ImmersFeedToolbarButtonContainer onClick={() => this.toggleSidebar("feed")} />
                     {entered &&
                       isMobileVR && (
                         <ToolbarButton
@@ -1632,16 +1647,19 @@ function UIRootHooksWrapper(props) {
 
   return (
     <ChatContextProvider messageDispatch={props.messageDispatch}>
-      <ObjectListProvider scene={props.scene}>
-        <UIRoot breakpoint={breakpoint} {...props} />
-      </ObjectListProvider>
+      <ImmersFeedContextProvider messageDispatch={props.immersMessageDispatch}>
+        <ObjectListProvider scene={props.scene}>
+          <UIRoot breakpoint={breakpoint} {...props} />
+        </ObjectListProvider>
+      </ImmersFeedContextProvider>
     </ChatContextProvider>
   );
 }
 
 UIRootHooksWrapper.propTypes = {
   scene: PropTypes.object.isRequired,
-  messageDispatch: PropTypes.object
+  messageDispatch: PropTypes.object,
+  immersMessageDispatch: PropTypes.object
 };
 
 export default UIRootHooksWrapper;

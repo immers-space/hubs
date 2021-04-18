@@ -9,7 +9,7 @@ export const statusColors = ["red", "orange", "green"];
 
 export const ToolbarButton = forwardRef(
   (
-    { preset, className, iconContainerClassName, children, icon, label, selected, large, statusColor, ...rest },
+    { preset, className, iconContainerClassName, children, icon, label, selected, large, small, statusColor, ...rest },
     ref
   ) => {
     return (
@@ -18,7 +18,7 @@ export const ToolbarButton = forwardRef(
         className={classNames(
           styles.toolbarButton,
           styles[preset],
-          { [styles.selected]: selected, [styles.large]: large },
+          { [styles.selected]: selected, [styles.large]: large, [styles.small]: small },
           className
         )}
         {...rest}
