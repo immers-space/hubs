@@ -94,6 +94,11 @@ import { TweetModalContainer } from "./room/TweetModalContainer";
 import { TipContainer, FullscreenTip } from "./room/TipContainer";
 import { SpectatingLabel } from "./room/SpectatingLabel";
 import { SignInMessages } from "./auth/SignInModal";
+import {
+  ImmersFeedContextProvider,
+  ImmersFeedSidebarContainer,
+  ImmersFeedToolbarButtonContainer
+} from "./room/ImmersFeedSidebarContainer";
 
 const avatarEditorDebug = qsTruthy("avatarEditorDebug");
 
@@ -141,6 +146,7 @@ class UIRoot extends Component {
     presences: PropTypes.object,
     friends: PropTypes.array,
     handle: PropTypes.string,
+    isMonetized: PropTypes.bool,
     sessionId: PropTypes.string,
     subscriptions: PropTypes.object,
     initialIsSubscribed: PropTypes.bool,
@@ -792,7 +798,8 @@ class UIRoot extends Component {
   renderEntryStartPanel = () => {
     const { hasAcceptedProfile, hasChangedName } = this.props.store.state.activity;
     const promptForNameAndAvatarBeforeEntry = this.props.hubIsBound ? !hasAcceptedProfile : !hasChangedName;
-
+    // monetized users can bypass room limit
+    const canEnter = !this.props.entryDisallowed || this.props.isMonetized;
     // TODO: What does onEnteringCanceled do?
     return (
       <>
@@ -800,7 +807,7 @@ class UIRoot extends Component {
           appName={configs.translation("app-name")}
           logoSrc={configs.image("logo")}
           roomName={this.props.hub.name}
-          showJoinRoom={!this.state.waitingOnAudio && !this.props.entryDisallowed}
+          showJoinRoom={!this.state.waitingOnAudio && canEnter}
           onJoinRoom={() => {
             if (promptForNameAndAvatarBeforeEntry || !this.props.forcedVREntryType) {
               this.setState({ entering: true });
@@ -816,9 +823,9 @@ class UIRoot extends Component {
               this.handleForceEntry();
             }
           }}
-          showEnterOnDevice={!this.state.waitingOnAudio && !this.props.entryDisallowed && !isMobileVR}
+          showEnterOnDevice={!this.state.waitingOnAudio && canEnter && !isMobileVR}
           onEnterOnDevice={() => this.attemptLink()}
-          showSpectate={!this.state.waitingOnAudio && !this.props.entryDisallowed}
+          showSpectate={!this.state.waitingOnAudio}
           onSpectate={() => this.setState({ watching: true })}
           showOptions={this.props.hubChannel.canOrWillIfCreator("update_hub")}
           onOptions={() => {
@@ -828,6 +835,8 @@ class UIRoot extends Component {
               SignInMessages.roomSettings
             );
           }}
+          showMonetizationRequired={!this.props.isMonetized}
+          showMonetized={this.props.isMonetized}
         />
         {!this.state.waitingOnAudio && (
           <EntryStartPanel
@@ -1427,6 +1436,15 @@ class UIRoot extends Component {
                           onClose={() => this.setSidebar(null)}
                         />
                       )}
+                      {this.state.sidebarId === "feed" && (
+                        <ImmersFeedSidebarContainer
+                          presences={this.props.presences}
+                          occupantCount={this.occupantCount()}
+                          canSpawnMessages={entered && this.props.hubChannel.can("spawn_and_move_media")}
+                          scene={this.props.scene}
+                          onClose={() => this.setSidebar(null)}
+                        />
+                      )}
                       {this.state.sidebarId === "objects" && (
                         <ObjectsSidebarContainer
                           hubChannel={this.props.hubChannel}
@@ -1556,6 +1574,7 @@ class UIRoot extends Component {
                       </>
                     )}
                     <ChatToolbarButtonContainer onClick={() => this.toggleSidebar("chat")} />
+                    <ImmersFeedToolbarButtonContainer onClick={() => this.toggleSidebar("feed")} />
                     {entered &&
                       isMobileVR && (
                         <ToolbarButton
@@ -1632,16 +1651,19 @@ function UIRootHooksWrapper(props) {
 
   return (
     <ChatContextProvider messageDispatch={props.messageDispatch}>
-      <ObjectListProvider scene={props.scene}>
-        <UIRoot breakpoint={breakpoint} {...props} />
-      </ObjectListProvider>
+      <ImmersFeedContextProvider messageDispatch={props.immersMessageDispatch}>
+        <ObjectListProvider scene={props.scene}>
+          <UIRoot breakpoint={breakpoint} {...props} />
+        </ObjectListProvider>
+      </ImmersFeedContextProvider>
     </ChatContextProvider>
   );
 }
 
 UIRootHooksWrapper.propTypes = {
   scene: PropTypes.object.isRequired,
-  messageDispatch: PropTypes.object
+  messageDispatch: PropTypes.object,
+  immersMessageDispatch: PropTypes.object
 };
 
 export default UIRootHooksWrapper;

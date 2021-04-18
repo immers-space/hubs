@@ -50,3 +50,12 @@
     }
   }
 }
+
+:local(.webmon) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  svg {
+    flex-shrink: 0;
+  }
+}
