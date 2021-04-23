@@ -226,7 +226,7 @@ export function ImmersFeedToolbarButtonContainer(props) {
     <ToolbarButton
       {...props}
       icon={<ImmersIcon />}
-      statusColor={unreadMessages ? "orange" : undefined}
+      statusColor={unreadMessages ? "unread" : undefined}
       preset="basic"
       small
       title="Chat across the metaverse that is saved in your profile"
