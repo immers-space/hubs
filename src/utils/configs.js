@@ -17,6 +17,7 @@ let isAdmin = false;
   "GA_TRACKING_ID",
   "SHORTLINK_DOMAIN",
   "IMMERS_SERVER",
+  "IMMERS_SCOPE",
   "BASE_ASSETS_PATH"
 ].forEach(x => {
   const el = document.querySelector(`meta[name='env:${x.toLowerCase()}']`);

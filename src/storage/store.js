@@ -63,7 +63,8 @@ export const SCHEMA = {
         token: { type: ["null", "string"] },
         email: { type: ["null", "string"] },
         immerToken: { type: ["null", "string"] },
-        immerHome: { type: ["null", "string"] }
+        immerHome: { type: ["null", "string"] },
+        immerScopes: { type: ["null", "array"] }
       }
     },
 

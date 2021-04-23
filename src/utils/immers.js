@@ -6,6 +6,8 @@ import { setupMonetization } from "./immers/monetization";
 import immersMessageDispatch from "./immers/immers-message-dispatch";
 import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
+// immer can set a requested scope, but user can override
+const preferredScope = configs.IMMERS_SCOPE;
 console.log("immers.space client v0.7.1");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
@@ -19,6 +21,7 @@ const activities = new Activities(localImmer);
 let homeImmer;
 let place;
 let token;
+let authorizedScopes;
 let hubScene;
 let localPlayer;
 let actorObj;
@@ -251,10 +254,12 @@ export async function auth(store) {
     // not safe to update store here, will be saved later in initialize()
     token = hashParams.get("access_token");
     homeImmer = hashParams.get("issuer");
+    authorizedScopes = hashParams.get("scope")?.split(" ") || [];
     window.location.hash = "";
   } else {
     token = store.state.credentials.immerToken;
     homeImmer = store.state.credentials.immerHome;
+    authorizedScopes = store.state.credentials.immerScopes;
   }
   activities.token = token;
   activities.homeImmer = homeImmer;
@@ -267,7 +272,8 @@ export async function auth(store) {
       client_id: place.id,
       // hub link with room id
       redirect_uri: hubUri,
-      response_type: "token"
+      response_type: "token",
+      scope: preferredScope
     });
     if (handle) {
       // pass to auth to prefill login form
@@ -319,7 +325,8 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     credentials: {
       immerToken: token,
       // record user's home server in case redirected during auth
-      immerHome: homeImmer
+      immerHome: homeImmer,
+      immerScopes: authorizedScopes
     }
   });
   const immerSocket = io(homeImmer, {
