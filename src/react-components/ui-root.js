@@ -172,6 +172,10 @@ class UIRoot extends Component {
     breakpoint: PropTypes.string
   };
 
+  static defaultProps = {
+    friends: []
+  };
+
   state = {
     enterInVR: false,
     entered: false,

@@ -225,7 +225,7 @@ export async function getFriends(actorObj) {
     }
   });
   if (!response.ok) {
-    throw new Error("Unable to fech friends");
+    throw new Error(`Unable to fech friends: ${response.statusText}`);
   }
   return response.json();
 }
@@ -381,9 +381,14 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
   const updateFriends = async () => {
     if (store.state.profile.id) {
       const profile = store.state.profile;
-      friendsCol = await getFriends(profile);
-      activities.friends = friendsCol.orderedItems;
-      remountUI({ friends: friendsCol.orderedItems.filter(act => act.type !== "Reject"), handle: profile.handle });
+      try {
+        friendsCol = await getFriends(profile);
+        activities.friends = friendsCol.orderedItems;
+        remountUI({ friends: friendsCol.orderedItems.filter(act => act.type !== "Reject"), handle: profile.handle });
+      } catch (err) {
+        console.warn(err.message);
+        remountUI({ friends: [], handle: profile.handle });
+      }
       // update follow button for new friends
       const players = window.APP.componentRegistry["player-info"];
       players?.forEach(infoComp => setFriendState(infoComp.data.immersId, infoComp.el));
