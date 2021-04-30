@@ -8,7 +8,7 @@ import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
 // immer can set a requested scope, but user can override
 const preferredScope = configs.IMMERS_SCOPE;
-console.log("immers.space client v0.7.1");
+console.log("immers.space client v1.1.0");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
