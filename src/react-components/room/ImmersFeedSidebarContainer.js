@@ -11,7 +11,7 @@ import { ReactComponent as LocalIcon } from "../icons/Home.svg";
 import { IconButton } from "../input/IconButton";
 import styles from "./ChatSidebar.scss";
 
-export const ImmersFeedContext = createContext({ messageGroups: [], sendMessage: () => {} });
+export const ImmersFeedContext = createContext({ messageGroups: [], sendMessage: () => {}, permissions: [] });
 
 let uniqueMessageId = 0;
 
@@ -54,7 +54,7 @@ function updateMessageGroups(messageGroups, newMessage) {
   }
 }
 
-export function ImmersFeedContextProvider({ messageDispatch, children, permissions, reAuthorize }) {
+export function ImmersFeedContextProvider({ messageDispatch, children, permissions = [], reAuthorize }) {
   const [messageGroups, setMessageGroups] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(false);
   const [audience, setAudience] = useState("public");
