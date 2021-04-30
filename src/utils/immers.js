@@ -345,6 +345,7 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
       immerScopes: authorizedScopes
     }
   });
+  authorizedScopes.forEach(scope => hubScene.addState(`immers-scope-${scope}`));
   const immerSocket = io(homeImmer, {
     transportOptions: {
       polling: {
