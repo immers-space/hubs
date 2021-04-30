@@ -231,7 +231,7 @@ export async function getFriends(actorObj) {
 }
 
 // perform oauth flow to get access token for local or remote user
-export async function auth(store) {
+export async function auth(store, scope) {
   // copy of URL used for sharing/authorization request
   const hubUri = new URL(window.location);
   const hashParams = new URLSearchParams(hubUri.hash.substring(1));
@@ -246,6 +246,9 @@ export async function auth(store) {
     // remove your handle before sharing with friends
     searchParams.delete("me");
     hubUri.search = searchParams.toString();
+  } else if (store.state.profile.handle) {
+    // can prefill login if known user but needs new token
+    handle = store.state.profile.handle;
   }
   place = await getObject(`${localImmer}/o/immer`);
   place.url = hubUri; // include room id
@@ -273,7 +276,7 @@ export async function auth(store) {
       // hub link with room id
       redirect_uri: hubUri,
       response_type: "token",
-      scope: preferredScope
+      scope: scope || preferredScope
     });
     if (handle) {
       // pass to auth to prefill login form
@@ -300,6 +303,19 @@ export async function auth(store) {
   } catch (err) {
     rejectAuth(err);
   }
+}
+
+// force re-login to change authorized scopes
+function resetAuth(store, scope) {
+  token = undefined;
+  store.update({
+    credentials: {
+      immerToken: null,
+      immerHome: null,
+      immerScopes: null
+    }
+  });
+  return auth(store, scope);
 }
 
 export async function initialize(store, scene, remountUI, messageDispatch, createInWorldLogMessage) {
@@ -400,6 +416,15 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
   scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
     const update = {};
+    // disable the first-time entry name & avatar prompt
+    store.update({
+      activity: {
+        hasChangedName: true
+      }
+    });
+    if (!authorizedScopes.includes("creative")) {
+      return;
+    }
     if (profile.displayName !== actorObj.name) {
       update.name = profile.displayName;
     }
@@ -411,12 +436,6 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     if (Object.keys(update).length) {
       await updateProfile(actorObj, update).catch(err => console.error("Error updating profile:", err.message));
     }
-    // disable the first-time entry name & avatar prompt
-    store.update({
-      activity: {
-        hasChangedName: true
-      }
-    });
   });
 
   // entity interactions
@@ -507,6 +526,7 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
         })
         .catch(err => console.error(`Error sharing chat: ${err.message}`));
     });
-    remountUI({ immersMessageDispatch });
+    const immersReAuth = scope => resetAuth(store, scope);
+    remountUI({ immersMessageDispatch, immersScopes: authorizedScopes, immersReAuth });
   }
 }

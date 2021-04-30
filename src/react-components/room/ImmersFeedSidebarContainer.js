@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { ChatSidebar, ChatMessageList, ChatInput, SendMessageButton } from "./ChatSidebar";
 import { useMaintainScrollPosition } from "../misc/useMaintainScrollPosition";
 import { FormattedMessage, useIntl } from "react-intl";
-import { ImmersChatMessage, ImmersIcon, ImmersMoreHistoryButton } from "./ImmersReact";
+import { ImmersChatMessage, ImmersIcon, ImmersMoreHistoryButton, ImmersPermissionUpgradeButton } from "./ImmersReact";
 import { ToolbarButton } from "../input/ToolbarButton";
 import { ReactComponent as PublicIcon } from "../icons/Scene.svg";
 import { ReactComponent as FriendsIcon } from "../icons/People.svg";
@@ -11,7 +11,7 @@ import { ReactComponent as LocalIcon } from "../icons/Home.svg";
 import { IconButton } from "../input/IconButton";
 import styles from "./ChatSidebar.scss";
 
-const ImmersFeedContext = createContext({ messageGroups: [], sendMessage: () => {} });
+export const ImmersFeedContext = createContext({ messageGroups: [], sendMessage: () => {} });
 
 let uniqueMessageId = 0;
 
@@ -54,7 +54,7 @@ function updateMessageGroups(messageGroups, newMessage) {
   }
 }
 
-export function ImmersFeedContextProvider({ messageDispatch, children }) {
+export function ImmersFeedContextProvider({ messageDispatch, children, permissions, reAuthorize }) {
   const [messageGroups, setMessageGroups] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(false);
   const [audience, setAudience] = useState("public");
@@ -108,7 +108,16 @@ export function ImmersFeedContextProvider({ messageDispatch, children }) {
 
   return (
     <ImmersFeedContext.Provider
-      value={{ messageGroups, unreadMessages, audience, sendMessage, setMessagesRead, setAudience }}
+      value={{
+        messageGroups,
+        unreadMessages,
+        audience,
+        permissions,
+        sendMessage,
+        setMessagesRead,
+        setAudience,
+        reAuthorize
+      }}
     >
       {children}
     </ImmersFeedContext.Provider>
@@ -117,11 +126,15 @@ export function ImmersFeedContextProvider({ messageDispatch, children }) {
 
 ImmersFeedContextProvider.propTypes = {
   children: PropTypes.node,
-  messageDispatch: PropTypes.object
+  messageDispatch: PropTypes.object,
+  permissions: PropTypes.array,
+  reAuthorize: PropTypes.func
 };
 
 export function ImmersFeedSidebarContainer({ onClose }) {
-  const { messageGroups, sendMessage, setMessagesRead, audience, setAudience } = useContext(ImmersFeedContext);
+  const { messageGroups, sendMessage, setMessagesRead, audience, setAudience, permissions } = useContext(
+    ImmersFeedContext
+  );
   const [onScrollList, listRef, scrolledToBottom] = useMaintainScrollPosition(messageGroups);
   const [message, setMessage] = useState("");
   const intl = useIntl();
@@ -187,6 +200,13 @@ export function ImmersFeedSidebarContainer({ onClose }) {
       {audience === "local" && <LocalIcon />}
     </IconButton>
   );
+  const canPost = permissions.includes("creative");
+  if (!canPost) {
+    placeholder = intl.formatMessage({
+      id: "immersfeed-sidebar-container.input-placeholder.forbidden",
+      defaultMessage: "Need permission to post"
+    });
+  }
   return (
     <ChatSidebar onClose={onClose} title="Immers Space metaverse chat">
       <ChatMessageList ref={listRef} onScroll={onScrollList}>
@@ -199,13 +219,18 @@ export function ImmersFeedSidebarContainer({ onClose }) {
         id="chat-input"
         onKeyDown={onKeyDown}
         onChange={e => setMessage(e.target.value)}
+        disabled={!canPost}
         placeholder={placeholder}
         value={message}
         afterInput={
-          <>
-            <SendMessageButton onClick={onSendMessage} disabled={message.length === 0} />
-            {audienceButton}
-          </>
+          canPost ? (
+            <>
+              <SendMessageButton onClick={onSendMessage} disabled={message.length === 0} />
+              {audienceButton}
+            </>
+          ) : (
+            <ImmersPermissionUpgradeButton role="modAdditive" />
+          )
         }
       />
     </ChatSidebar>

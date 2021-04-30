@@ -145,6 +145,7 @@ class UIRoot extends Component {
     presences: PropTypes.object,
     friends: PropTypes.array,
     handle: PropTypes.string,
+    immersScopes: PropTypes.array,
     isMonetized: PropTypes.bool,
     sessionId: PropTypes.string,
     subscriptions: PropTypes.object,
@@ -173,7 +174,8 @@ class UIRoot extends Component {
   };
 
   static defaultProps = {
-    friends: []
+    friends: [],
+    immersScopes: []
   };
 
   state = {
@@ -1649,7 +1651,11 @@ function UIRootHooksWrapper(props) {
 
   return (
     <ChatContextProvider messageDispatch={props.messageDispatch}>
-      <ImmersFeedContextProvider messageDispatch={props.immersMessageDispatch}>
+      <ImmersFeedContextProvider
+        messageDispatch={props.immersMessageDispatch}
+        permissions={props.immersScopes}
+        reAuthorize={props.immersReAuth}
+      >
         <ObjectListProvider scene={props.scene}>
           <UIRoot breakpoint={breakpoint} {...props} />
         </ObjectListProvider>
@@ -1662,7 +1668,9 @@ UIRootHooksWrapper.propTypes = {
   scene: PropTypes.object.isRequired,
   messageDispatch: PropTypes.object,
   store: PropTypes.object.isRequired,
-  immersMessageDispatch: PropTypes.object
+  immersMessageDispatch: PropTypes.object,
+  immersScopes: PropTypes.array,
+  immersReAuth: PropTypes.func
 };
 
 export default UIRootHooksWrapper;

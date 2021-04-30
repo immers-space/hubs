@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import classNames from "classnames";
 import { getMessageComponent } from "./ChatSidebar";
@@ -8,6 +8,7 @@ import { FormattedRelativeTime } from "react-intl";
 import { proxiedUrlFor } from "../../utils/media-url-utils";
 import immersLogo from "../../assets/images/immers_logo.png";
 import merge from "deepmerge";
+import { ImmersFeedContext } from "./ImmersFeedSidebarContainer";
 
 function proxyAndGetMessageComponent(message) {
   // media urls need proxy to pass CSP & CORS
@@ -147,3 +148,37 @@ export function ImmersMoreHistoryButton() {
     )
   );
 }
+
+export function ImmersPermissionUpgrade({ scope, role, children }) {
+  const { permissions } = useContext(ImmersFeedContext);
+  if (permissions.includes(scope)) {
+    return null;
+  }
+  return (
+    <div className={styles.permissions}>
+      <ImmersIcon />
+      <p>
+        {children}. <ImmersPermissionUpgradeButton role={role} />
+      </p>
+    </div>
+  );
+}
+
+ImmersPermissionUpgrade.propTypes = {
+  children: PropTypes.node,
+  scope: PropTypes.string,
+  role: PropTypes.string
+};
+
+export function ImmersPermissionUpgradeButton({ role }) {
+  const { reAuthorize } = useContext(ImmersFeedContext);
+  return (
+    <a href="#" className={styles.permissionsButton} onClick={() => reAuthorize(role)}>
+      Reload &amp; change
+    </a>
+  );
+}
+
+ImmersPermissionUpgradeButton.propTypes = {
+  role: PropTypes.string
+};
