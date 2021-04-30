@@ -62,6 +62,34 @@ export default class Activities {
     return col;
   }
 
+  async blockList() {
+    const blocked = [];
+    // use blocklist IRI if specified, fallback to immers default
+    const blockedIRI = this.actor.streams?.blocked || `${this.homeImmer}/blocked/${this.actor.preferredUsername}`;
+    let col;
+    try {
+      col = await this.getObject(blockedIRI);
+    } catch (err) {
+      console.warn("Unable to fetch blocklist: ", err.message);
+      return blocked;
+    }
+    if (col.orderedItems?.length) {
+      blocked.push(...col.orderedItems);
+    } else {
+      col = await this.getObject(col.first);
+      blocked.push(...col.orderedItems);
+    }
+    // fetch entire collection
+    while (col.next) {
+      col = await this.getObject(col.next);
+      if (!col.orderedItems?.length) {
+        break;
+      }
+      blocked.push(...col.orderedItems);
+    }
+    return blocked.map(b => (typeof b === "object" ? b.id : b));
+  }
+
   async inboxAsChat() {
     const inbox = await this.inbox();
     if (!inbox?.orderedItems?.length) {
@@ -197,6 +225,14 @@ export default class Activities {
       obj.to.push(Activities.PublicAddress);
     }
     return this.postActivity(obj);
+  }
+
+  block(blockeeId) {
+    return this.postActivity({
+      type: "Block",
+      actor: this.actor.id,
+      object: blockeeId
+    });
   }
 
   activityAsChat(activity, outbox = false) {
