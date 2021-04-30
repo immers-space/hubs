@@ -23,6 +23,7 @@ let hubScene;
 let localPlayer;
 let actorObj;
 let avatarsCollection;
+let blockList;
 // map of avatar urls to model objects to avoid recreating their AP representation
 // when donned from personal avatars collection
 const myAvatars = {};
@@ -384,6 +385,21 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
   updateFriends();
   immerSocket.on("friends-update", updateFriends);
 
+  blockList = await activities.blockList();
+  // hide any blocked users currently in the room
+  Object.entries(window.APP.hubChannel.presence.state).forEach(([clientId, presence]) => {
+    const immersId = presence.metas[presence.metas.length - 1]?.profile.id;
+    if (blockList.includes(immersId)) {
+      window.APP.hubChannel.hide(clientId);
+    }
+  });
+  // hide blocked users as soon as they connect
+  scene.addEventListener("presence_updated", ({ detail: { sessionId, profile } }) => {
+    if (blockList.includes(profile.id)) {
+      window.APP.hubChannel.hide(sessionId);
+    }
+  });
+
   scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
     const update = {};
@@ -426,6 +442,16 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
   scene.addEventListener("immers-follow-reject", event => {
     // server converts actorId to followId for reject object
     activities.reject(event.detail, event.detail).catch(err => console.error("Error sending unfollow:", err.message));
+  });
+  // blocked
+  scene.addEventListener("immers-block", ({ detail: { clientId } }) => {
+    const presence = window.APP.hubChannel.presence.state[clientId];
+    const immersId = presence?.metas[presence.metas.length - 1]?.profile.id;
+    if (immersId) {
+      activities.block(immersId);
+      // update local copy in case blocked user reconnects
+      blockList.push(immersId);
+    }
   });
 
   setupMonetization(hubScene, localPlayer, remountUI);
