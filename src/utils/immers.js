@@ -120,7 +120,7 @@ export async function createAvatar(actorObj, hubsAvatarId) {
       mediaType: hubsAvatar.gltf_url.includes(".glb") ? "model/gltf-binary" : "model/gltf+json"
     },
     to: actorObj.followers,
-    generator: place.id
+    generator: place
   };
   if (hubsAvatar.files.thumbnail) {
     immersAvatar.icon = {
@@ -204,8 +204,9 @@ export async function fetchMyImmersAvatars(page) {
             url: preview
           }
         },
-        // the url displayed on hover is the immers link
-        url: avatar.id
+        // display source immer name & link in description field
+        attributions: { publisher: { name: avatar.generator?.name } },
+        url: avatar.generator?.url || avatar.id
       });
     });
   } catch (err) {
