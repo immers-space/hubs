@@ -13,12 +13,15 @@ import styleUtils from "../styles/style-utils.scss";
 import { useCssBreakpoints } from "react-use-css-breakpoints";
 import { Column } from "../layout/Column";
 import { FormattedMessage } from "react-intl";
+import { ImmersIcon } from "./ImmersReact";
 
 export function RoomEntryModal({
   appName,
   logoSrc,
   className,
   roomName,
+  showLoginToImmers,
+  onLoginToImmers,
   showJoinRoom,
   onJoinRoom,
   showEnterOnDevice,
@@ -48,7 +51,15 @@ export function RoomEntryModal({
           <p>{roomName}</p>
         </div>
         <Column center className={styles.buttons}>
-          {showJoinRoom && (
+          {showLoginToImmers && (
+            <Button preset="basic" onClick={onLoginToImmers}>
+              <ImmersIcon button={true} />
+              <span>
+                <FormattedMessage id="room-entry-modal.login-to-immers-button" defaultMessage="Immers Login" />
+              </span>
+            </Button>
+          )}
+          {!showLoginToImmers && showJoinRoom && (
             <Button preset="accent4" onClick={onJoinRoom}>
               <EnterIcon />
               <span>
@@ -56,7 +67,7 @@ export function RoomEntryModal({
               </span>
             </Button>
           )}
-          {showEnterOnDevice && (
+          {!showLoginToImmers && showEnterOnDevice && (
             <Button preset="accent5" onClick={onEnterOnDevice}>
               <VRIcon />
               <span>

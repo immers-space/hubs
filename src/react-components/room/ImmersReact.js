@@ -33,9 +33,9 @@ export function ImmerLink({ place }) {
     ) {
       placeUrl = null;
     } else {
-      const search = new URLSearchParams(url.search);
-      search.set("me", window.APP.store.state.profile.handle);
-      url.search = search.toString();
+      const hashParams = new URLSearchParams();
+      hashParams.set("me", window.APP.store.state.profile.handle);
+      url.hash = hashParams.toString();
       placeUrl = url.toString();
     }
   } catch (ignore) {
@@ -86,24 +86,25 @@ ImmersChatMessage.propTypes = {
   context: PropTypes.object
 };
 
-export function ImmersImageIcon({ src, title }) {
+export function ImmersImageIcon({ src, title, button }) {
   return (
-    <span className={styles.imageIconWrapper}>
+    <span className={classNames({ [styles.imageIconWrapper]: true, [styles.buttonIcon]: button })}>
       {src && <img className={styles.imageIcon} src={proxiedUrlFor(src)} title={title} />}
     </span>
   );
 }
 ImmersImageIcon.propTypes = {
   src: PropTypes.string,
-  title: PropTypes.string
+  title: PropTypes.string,
+  button: PropTypes.bool
 };
 
 export function ImmersFriendIcon() {
   return <ImmersImageIcon src={immersLogo} title={"Immers Space Friend"} />;
 }
 
-export function ImmersIcon() {
-  return <ImmersImageIcon src={immersLogo} />;
+export function ImmersIcon(props) {
+  return <ImmersImageIcon src={immersLogo} {...props} />;
 }
 
 export function ImmersAvatarIcon({ avi }) {

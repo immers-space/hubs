@@ -6,6 +6,11 @@
   overflow: hidden;
 }
 
+:local(.button-icon) {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
 :local(.image-icon) {
   width: 20px;
 }

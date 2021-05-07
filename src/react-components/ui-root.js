@@ -146,6 +146,8 @@ class UIRoot extends Component {
     friends: PropTypes.array,
     handle: PropTypes.string,
     immersScopes: PropTypes.array,
+    isImmersConnected: PropTypes.bool,
+    startImmersAuth: PropTypes.func,
     isMonetized: PropTypes.bool,
     sessionId: PropTypes.string,
     subscriptions: PropTypes.object,
@@ -175,7 +177,8 @@ class UIRoot extends Component {
 
   static defaultProps = {
     friends: [],
-    immersScopes: []
+    immersScopes: [],
+    isImmersConnected: false
   };
 
   state = {
@@ -807,6 +810,8 @@ class UIRoot extends Component {
           appName={configs.translation("app-name")}
           logoSrc={configs.image("logo")}
           roomName={this.props.hub.name}
+          showLoginToImmers={!this.props.isImmersConnected}
+          onLoginToImmers={this.props.startImmersAuth}
           showJoinRoom={!this.state.waitingOnAudio && canEnter}
           onJoinRoom={() => {
             if (promptForNameAndAvatarBeforeEntry || !this.props.forcedVREntryType) {
@@ -1574,7 +1579,9 @@ class UIRoot extends Component {
                       </>
                     )}
                     <ChatToolbarButtonContainer onClick={() => this.toggleSidebar("chat")} />
-                    <ImmersFeedToolbarButtonContainer onClick={() => this.toggleSidebar("feed")} />
+                    {this.props.isImmersConnected && (
+                      <ImmersFeedToolbarButtonContainer onClick={() => this.toggleSidebar("feed")} />
+                    )}
                     {entered &&
                       isMobileVR && (
                         <ToolbarButton

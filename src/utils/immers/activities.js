@@ -5,6 +5,7 @@ export default class Activities {
     this.localImmer = localImmer;
     this.homeImmer = null;
     this.token = null;
+    this.authorizedScopes = null;
     this.actor = null;
     this.place = null;
     this.nextInboxPage = null;
