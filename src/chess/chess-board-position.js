@@ -14,7 +14,7 @@ AFRAME.registerComponent("chess-board-position", {
     const squareSize = size.x / 8;
     const game = document.createElement("a-entity");
     game.setAttribute("chess-game", `squareSize: ${squareSize}; hideBoard: true;`);
-    game.setAttribute("networked", "template: #template-waypoint-avatar;");
+    game.setAttribute("networked", "template: #static-game-avatar;");
     const newPos = bbox.min;
     newPos.y = newPos.y - squareSize - squareSize / 4;
     newPos.x = newPos.x + squareSize / 2;

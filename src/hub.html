@@ -569,7 +569,8 @@
             </template>
 
             <template id="static-game-avatar">
-                <a-entity></a-entity>
+                <!-- matrix udpates on chess board entities fixes desync issue -->
+                <a-entity matrix-auto-update></a-entity>
             </template>
 
             <template id="interactable-emoji">
