@@ -45,7 +45,7 @@ export const SCHEMA = {
       additionalProperties: false,
       properties: {
         handle: { type: "string" },
-        displayName: { type: "string", pattern: "^[A-Za-z0-9 -]{3,32}$" },
+        displayName: { type: "string", pattern: "^[A-Za-z0-9_~ -]{3,32}$" },
         avatarId: { type: "string" },
         id: { type: "string" },
         outbox: { type: "string" },
@@ -89,7 +89,8 @@ export const SCHEMA = {
       type: "object",
       additionalProperties: false,
       properties: {
-        lastUsedMicDeviceId: { type: "string" }
+        lastUsedMicDeviceId: { type: "string" },
+        micMuted: { type: "bool" }
       }
     },
 
@@ -98,6 +99,7 @@ export const SCHEMA = {
       additionalProperties: false,
       properties: {
         shouldPromptForRefresh: { type: "bool" },
+        preferredMic: { type: "string" },
         preferredCamera: { type: "string" },
         muteMicOnEntry: { type: "bool" },
         audioOutputMode: { type: "string" },
@@ -108,6 +110,7 @@ export const SCHEMA = {
         enableGyro: { type: "bool" },
         onlyShowNametagsInFreeze: { type: "bool" },
         animateWaypointTransitions: { type: "bool" },
+        showFPSCounter: { type: "bool" },
         allowMultipleHubsInstances: { type: "bool" },
         disableIdleDetection: { type: "bool" },
         preferMobileObjectInfoPanel: { type: "bool" },
@@ -129,7 +132,8 @@ export const SCHEMA = {
         disableNoiseSuppression: { type: "bool" },
         disableAutoGainControl: { type: "bool" },
         locale: { type: "string" },
-        showRtcDebugPanel: { type: "bool" }
+        showRtcDebugPanel: { type: "bool" },
+        theme: { type: "string" }
       }
     },
 

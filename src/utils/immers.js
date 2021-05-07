@@ -1,10 +1,12 @@
 import io from "socket.io-client";
 import configs from "./configs";
 import { fetchAvatar } from "./avatar-utils";
+import { SOUND_CHAT_MESSAGE } from "../systems/sound-effects-system";
 import { setupMonetization } from "./immers/monetization";
+import immersMessageDispatch from "./immers/immers-message-dispatch";
 import Activities from "./immers/activities";
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.6.0");
+console.log("immers.space client v0.7.1");
 const jsonldMime = "application/activity+json";
 // avoid race between auth and initialize code
 let resolveAuth;
@@ -21,6 +23,7 @@ let hubScene;
 let localPlayer;
 let actorObj;
 let avatarsCollection;
+let blockList;
 // map of avatar urls to model objects to avoid recreating their AP representation
 // when donned from personal avatars collection
 const myAvatars = {};
@@ -117,7 +120,7 @@ export async function createAvatar(actorObj, hubsAvatarId) {
       mediaType: hubsAvatar.gltf_url.includes(".glb") ? "model/gltf-binary" : "model/gltf+json"
     },
     to: actorObj.followers,
-    generator: place.id
+    generator: place
   };
   if (hubsAvatar.files.thumbnail) {
     immersAvatar.icon = {
@@ -201,8 +204,9 @@ export async function fetchMyImmersAvatars(page) {
             url: preview
           }
         },
-        // the url displayed on hover is the immers link
-        url: avatar.id
+        // display source immer name & link in description field
+        attributions: { publisher: { name: avatar.generator?.name } },
+        url: avatar.generator?.url || avatar.id
       });
     });
   } catch (err) {
@@ -328,12 +332,8 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
       }
     }
   });
-  let hasArrived;
   immerSocket.on("connect", () => {
-    if (hasArrived) {
-      return;
-    }
-    hasArrived = true;
+    // will also send on reconnect to ensure you show as online
     arrive(actorObj);
     immerSocket.emit("entered", {
       // prepare a leave activity to be fired on disconnect
@@ -386,6 +386,21 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
   updateFriends();
   immerSocket.on("friends-update", updateFriends);
 
+  blockList = await activities.blockList();
+  // hide any blocked users currently in the room
+  Object.entries(window.APP.hubChannel.presence.state).forEach(([clientId, presence]) => {
+    const immersId = presence.metas[presence.metas.length - 1]?.profile.id;
+    if (blockList.includes(immersId)) {
+      window.APP.hubChannel.hide(clientId);
+    }
+  });
+  // hide blocked users as soon as they connect
+  scene.addEventListener("presence_updated", ({ detail: { sessionId, profile } }) => {
+    if (blockList.includes(profile.id)) {
+      window.APP.hubChannel.hide(sessionId);
+    }
+  });
+
   scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
     const update = {};
@@ -429,16 +444,26 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     // server converts actorId to followId for reject object
     activities.reject(event.detail, event.detail).catch(err => console.error("Error sending unfollow:", err.message));
   });
+  // blocked
+  scene.addEventListener("immers-block", ({ detail: { clientId } }) => {
+    const presence = window.APP.hubChannel.presence.state[clientId];
+    const immersId = presence?.metas[presence.metas.length - 1]?.profile.id;
+    if (immersId) {
+      activities.block(immersId);
+      // update local copy in case blocked user reconnects
+      blockList.push(immersId);
+    }
+  });
 
-  setupMonetization(hubScene, localPlayer);
+  setupMonetization(hubScene, localPlayer, remountUI);
 
   // news feed and chat integration, behind a feature switch as it needs the new hubs ui
-  if (messageDispatch) {
+  if (createInWorldLogMessage) {
     // fetch news feed
     const updateFeed = async () => {
       const { messages, more } = await activities.feedAsChat();
       messages.forEach(detail => {
-        messageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
+        immersMessageDispatch.dispatchEvent(new CustomEvent("message", { detail }));
       });
       return more;
     };
@@ -454,20 +479,18 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
       activity = JSON.parse(activity);
       const message = activities.activityAsChat(activity);
       if (message.body) {
-        messageDispatch.dispatchEvent(new CustomEvent("message", { detail: message }));
+        if (message.type !== "activity") {
+          // play sound for chat/image/video updates
+          scene.systems["hubs-systems"].soundEffectsSystem.playSoundOneShot(SOUND_CHAT_MESSAGE);
+        }
+        immersMessageDispatch.dispatchEvent(new CustomEvent("message", { detail: message }));
         if (scene.is("vr-mode")) {
           createInWorldLogMessage(message);
         }
       }
     });
-    // intercept outgoing messages and post to immers space feed
-    messageDispatch.addEventListener("message", ({ detail: message }) => {
-      // skip if incoming message or loaded from history
-      if (!message.sent || message.isImmersFeed) {
-        return;
-      }
-      // Send to immers id of everyone in room so all chat goes through immers and
-      // we don't have to worry about duplicate messages appearing in chat
+    immersMessageDispatch.setDispatchHandler(message => {
+      // include local room occupants
       const localAudience = Object.values(window.APP.hubChannel.presence.state)
         .map(presence => presence.metas[presence.metas.length - 1]?.profile.id)
         .filter(id => id && id !== actorObj.id);
@@ -475,19 +498,29 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
       let task;
       switch (message.type) {
         case "chat":
-          task = activities.note(message.body, localAudience, true, null);
+          task = activities.note(message.body, localAudience, message.audience, null);
           break;
         case "image":
         case "photo":
-          task = activities.image(message.body.src, localAudience, true, null);
+          task = activities.image(message.body.src, localAudience, message.audience, null);
           break;
         case "video":
-          task = activities.video(message.body.src, localAudience, true, null);
+          task = activities.video(message.body.src, localAudience, message.audience, null);
           break;
         default:
-          console.log("Chat message not shared", message);
+          return console.log("Chat message not shared", message);
       }
-      task.catch(err => console.error(`Error sharing chat: ${err.message}`));
+      task
+        .then(async postResult => {
+          if (!postResult.ok) {
+            throw new Error(postResult.status);
+          }
+          // fetch the newly created activity and feed it back into chat system so your outgoing messages appear in panel
+          const chat = activities.activityAsChat(await getObject(postResult.headers.get("Location")), true);
+          immersMessageDispatch.dispatchEvent(new CustomEvent("message", { detail: chat }));
+        })
+        .catch(err => console.error(`Error sharing chat: ${err.message}`));
     });
+    remountUI({ immersMessageDispatch });
   }
 }
