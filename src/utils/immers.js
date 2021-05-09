@@ -5,28 +5,37 @@ import { SOUND_CHAT_MESSAGE } from "../systems/sound-effects-system";
 import { setupMonetization } from "./immers/monetization";
 import immersMessageDispatch from "./immers/immers-message-dispatch";
 import Activities from "./immers/activities";
+import { allScopes } from "./immers/authUtils";
+const replaceArrays = { arrayMerge: (destinationArray, sourceArray) => sourceArray };
 const localImmer = configs.IMMERS_SERVER;
-console.log("immers.space client v0.7.1");
+// immer can set a requested scope, but user can override
+const preferredScope = configs.IMMERS_SCOPE;
+console.log("immers.space client v1.1.0");
 const jsonldMime = "application/activity+json";
-// avoid race between auth and initialize code
-let resolveAuth;
-let rejectAuth;
-const authPromise = new Promise((resolve, reject) => {
-  resolveAuth = resolve;
-  rejectAuth = reject;
-});
+
 const activities = new Activities(localImmer);
 let homeImmer;
 let place;
 let token;
+let authorizedScopes;
 let hubScene;
 let localPlayer;
 let actorObj;
+let handle;
 let avatarsCollection;
 let blockList;
 // map of avatar urls to model objects to avoid recreating their AP representation
 // when donned from personal avatars collection
 const myAvatars = {};
+
+// copy of URL used for sharing/authorization request
+const hashParams = new URLSearchParams(window.location.hash.substring(1));
+if (hashParams.has("me")) {
+  handle = hashParams.get("me");
+  // remove your handle before sharing with friends
+  window.location.hash = "";
+}
+const hubUri = new URL(window.location);
 
 export function getUrlFromAvatar(avatar) {
   const links = Array.isArray(avatar.url) ? avatar.url : [avatar.url];
@@ -223,106 +232,136 @@ export async function getFriends(actorObj) {
     }
   });
   if (!response.ok) {
-    throw new Error("Unable to fech friends");
+    throw new Error(`Unable to fech friends: ${response.statusText}`);
   }
   return response.json();
 }
 
 // perform oauth flow to get access token for local or remote user
-export async function auth(store) {
-  // copy of URL used for sharing/authorization request
-  const hubUri = new URL(window.location);
-  const hashParams = new URLSearchParams(hubUri.hash.substring(1));
-  const searchParams = new URLSearchParams(hubUri.search);
-  let handle;
-
-  // don't share your token!
-  hubUri.hash = "";
-  // users handle may be passed from previous immer
-  if (searchParams.has("me")) {
-    handle = searchParams.get("me");
-    // remove your handle before sharing with friends
-    searchParams.delete("me");
-    hubUri.search = searchParams.toString();
-  }
-  place = await getObject(`${localImmer}/o/immer`);
-  place.url = hubUri; // include room id
-  activities.place = place;
-  if (hashParams.has("access_token")) {
-    // not safe to update store here, will be saved later in initialize()
-    token = hashParams.get("access_token");
-    homeImmer = hashParams.get("issuer");
-    window.location.hash = "";
-  } else {
-    token = store.state.credentials.immerToken;
-    homeImmer = store.state.credentials.immerHome;
-  }
-  activities.token = token;
-  activities.homeImmer = homeImmer;
-
-  const redirectToAuth = () => {
-    // send to token endpoint at local immer, it handles
-    // detecting remote users and sending them on to their home to login
-    const redirect = new URL(`${localImmer}/auth/authorize`);
-    const redirectParams = new URLSearchParams({
-      client_id: place.id,
-      // hub link with room id
-      redirect_uri: hubUri,
-      response_type: "token"
-    });
-    if (handle) {
-      // pass to auth to prefill login form
-      redirectParams.set("me", handle);
+export async function auth(store, scope) {
+  // check if we're already logged in
+  token = store.state.credentials.immerToken;
+  homeImmer = store.state.credentials.immerHome;
+  authorizedScopes = store.state.credentials.immerScopes;
+  if (token && homeImmer && authorizedScopes) {
+    const loggedInActor = await getActor().catch(() => null);
+    if (loggedInActor) {
+      return {
+        authPromise: Promise.resolve(loggedInActor)
+      };
     }
-    redirect.search = redirectParams.toString();
-    // hide error messages caused by interrupting loading to redirect
-    try {
-      document.getElementById("ui-root").style.display = "none";
-    } catch (ignore) {
-      /* ignore */
+  }
+  // send to token endpoint at local immer, it handles
+  // detecting remote users and sending them on to their home to login
+  const redirect = new URL(`${localImmer}/auth/authorize`);
+  const redirectParams = new URLSearchParams({
+    client_id: place.id,
+    // redirect to homepage to catch token
+    redirect_uri: hubUri.origin,
+    response_type: "token",
+    scope: scope || preferredScope
+  });
+  // users handle may be passed from previous immer or cached but with expired token
+  if (handle || store.state.profile.handle) {
+    // pass to auth to prefill login form
+    redirectParams.set("me", handle || store.state.profile.handle);
+  }
+  redirect.search = redirectParams.toString();
+  // center the popup
+  const width = 730;
+  const height = 785;
+  const left = (window.innerWidth - width) / 2 + window.screenLeft;
+  const top = (window.innerHeight - height) / 2 + window.screenTop;
+  const features = `toolbar=no, menubar=no, width=${width}, height=${height}, top=${top}, left=${left}`;
+  let popup;
+  return {
+    authPromise: new Promise((resolve, reject) => {
+      const handler = ({ data }) => {
+        if (data?.type !== "ImmersAuth") {
+          return;
+        }
+        if (!data.token) {
+          return reject("Not authorized");
+        }
+        token = data.token;
+        homeImmer = data.homeImmer;
+        authorizedScopes = data.authorizedScopes[0] === "*" ? allScopes : data.authorizedScopes;
+        window.removeEventListener("message", handler);
+        // have to close the popup in this thread because, in chrome, having the popup close itself crashes the browser
+        popup?.close();
+        resolve(getActor());
+      };
+      window.addEventListener("message", handler);
+    }),
+    startImmersAuth: () => {
+      popup = window.open(redirect, "immersLoginPopup", features);
     }
-    window.location = redirect;
   };
+}
 
-  // will cause re-auth when expired/invalid tokens are rejected
-  authPromise.catch(redirectToAuth);
-  // check token validity & get actor object
-  if (!token) {
-    return redirectToAuth();
-  }
-  try {
-    resolveAuth(await getActor());
-  } catch (err) {
-    rejectAuth(err);
-  }
+// force re-login to change authorized scopes
+async function resetAuth(store, remountUI, scope) {
+  token = undefined;
+  store.update({
+    credentials: {
+      immerToken: null,
+      immerHome: null,
+      immerScopes: null
+    }
+  });
+  const { authPromise, startImmersAuth } = await auth(store, scope);
+  startImmersAuth();
+  await authPromise;
+  store.update({
+    credentials: {
+      immerToken: token,
+      immerHome: homeImmer,
+      immerScopes: authorizedScopes
+    }
+  });
+  // could, in theory, handle scope upgrades without reloading, but it would be a lot of work
+  return window.location.reload();
 }
 
 export async function initialize(store, scene, remountUI, messageDispatch, createInWorldLogMessage) {
   hubScene = scene;
   localPlayer = document.getElementById("avatar-rig");
-  // immers profile
+  place = await getObject(`${localImmer}/o/immer`);
+  place.url = hubUri; // include room id
+  activities.place = place;
+  const { authPromise, startImmersAuth } = await auth(store);
+  remountUI({ isImmersConnected: false, startImmersAuth });
   actorObj = await authPromise;
+  activities.token = token;
+  activities.homeImmer = homeImmer;
+  activities.authorizedScopes = authorizedScopes;
   activities.actor = actorObj;
   const initialAvi = store.state.profile.avatarId;
   const actorAvi = getAvatarFromActor(actorObj);
   // cache current avatar so doesn't get recreated during a profile update
   myAvatars[actorAvi] = Array.isArray(actorObj.avatar) ? actorObj.avatar[0] : actorObj.avatar;
-  store.update({
-    profile: {
-      id: actorObj.id,
-      avatarId: actorAvi || initialAvi,
-      displayName: actorObj.name,
-      handle: `${actorObj.preferredUsername}[${new URL(homeImmer).host}]`,
-      inbox: actorObj.inbox,
-      outbox: actorObj.outbox,
-      followers: actorObj.followers
+  store.update(
+    {
+      profile: {
+        id: actorObj.id,
+        avatarId: actorAvi || initialAvi,
+        displayName: actorObj.name,
+        handle: `${actorObj.preferredUsername}[${new URL(homeImmer).host}]`,
+        inbox: actorObj.inbox,
+        outbox: actorObj.outbox,
+        followers: actorObj.followers
+      },
+      credentials: {
+        immerToken: token,
+        // record user's home server in case redirected during auth
+        immerHome: homeImmer,
+        immerScopes: authorizedScopes
+      }
     },
-    credentials: {
-      immerToken: token,
-      // record user's home server in case redirected during auth
-      immerHome: homeImmer
-    }
-  });
+    // don't accumulate scopes
+    replaceArrays
+  );
+  authorizedScopes.forEach(scope => hubScene.addState(`immers-scope-${scope}`));
   const immerSocket = io(homeImmer, {
     transportOptions: {
       polling: {
@@ -375,9 +414,14 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
   const updateFriends = async () => {
     if (store.state.profile.id) {
       const profile = store.state.profile;
-      friendsCol = await getFriends(profile);
-      activities.friends = friendsCol.orderedItems;
-      remountUI({ friends: friendsCol.orderedItems.filter(act => act.type !== "Reject"), handle: profile.handle });
+      try {
+        friendsCol = await getFriends(profile);
+        activities.friends = friendsCol.orderedItems;
+        remountUI({ friends: friendsCol.orderedItems.filter(act => act.type !== "Reject"), handle: profile.handle });
+      } catch (err) {
+        console.warn(err.message);
+        remountUI({ friends: [], handle: profile.handle });
+      }
       // update follow button for new friends
       const players = window.APP.componentRegistry["player-info"];
       players?.forEach(infoComp => setFriendState(infoComp.data.immersId, infoComp.el));
@@ -404,6 +448,15 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
   scene.addEventListener("avatar_updated", async () => {
     const profile = store.state.profile;
     const update = {};
+    // disable the first-time entry name & avatar prompt
+    store.update({
+      activity: {
+        hasChangedName: true
+      }
+    });
+    if (!authorizedScopes.includes("creative")) {
+      return;
+    }
     if (profile.displayName !== actorObj.name) {
       update.name = profile.displayName;
     }
@@ -415,12 +468,6 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     if (Object.keys(update).length) {
       await updateProfile(actorObj, update).catch(err => console.error("Error updating profile:", err.message));
     }
-    // disable the first-time entry name & avatar prompt
-    store.update({
-      activity: {
-        hasChangedName: true
-      }
-    });
   });
 
   // entity interactions
@@ -521,6 +568,7 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
         })
         .catch(err => console.error(`Error sharing chat: ${err.message}`));
     });
-    remountUI({ immersMessageDispatch });
+    const immersReAuth = scope => resetAuth(store, remountUI, scope);
+    remountUI({ immersMessageDispatch, immersScopes: authorizedScopes, isImmersConnected: true, immersReAuth });
   }
 }

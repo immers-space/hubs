@@ -6,6 +6,11 @@
   overflow: hidden;
 }
 
+:local(.button-icon) {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
 :local(.image-icon) {
   width: 20px;
 }
@@ -46,4 +51,18 @@
   text-align: center;
   padding-top: 5px;
   font-size: theme.$font-size-sm;
+}
+
+:local(.permissions) {
+  display: flex;
+  font-size: theme.$font-size-sm;
+  padding-left: 5px;
+
+  p {
+    padding-left: 5px;
+  }
+}
+
+:local(.permissions-button) {
+  padding-right: 5px;
 }

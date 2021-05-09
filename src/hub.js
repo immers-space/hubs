@@ -191,8 +191,6 @@ if (isEmbed && !qs.get("embed_token")) {
   throw new Error("no embed token");
 }
 
-immers.auth(store);
-
 THREE.Object3D.DefaultMatrixAutoUpdate = false;
 
 import "./components/owned-object-limiter";

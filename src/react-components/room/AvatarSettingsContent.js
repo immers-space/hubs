@@ -5,6 +5,7 @@ import styles from "./AvatarSettingsContent.scss";
 import { TextInputField } from "../input/TextInputField";
 import { Column } from "../layout/Column";
 import { FormattedMessage } from "react-intl";
+import { ImmersPermissionUpgrade } from "./ImmersReact";
 
 export function AvatarSettingsContent({
   displayName,
@@ -41,6 +42,9 @@ export function AvatarSettingsContent({
         </Button>
       </div>
       <AcceptButton preset="accept" type="submit" />
+      <ImmersPermissionUpgrade scope="creative" role="modAdditive">
+        Changes will only apply in this Immer. Need permission to update profile or save new avatars
+      </ImmersPermissionUpgrade>
     </Column>
   );
 }

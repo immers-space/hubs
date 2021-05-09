@@ -145,6 +145,9 @@ class UIRoot extends Component {
     presences: PropTypes.object,
     friends: PropTypes.array,
     handle: PropTypes.string,
+    immersScopes: PropTypes.array,
+    isImmersConnected: PropTypes.bool,
+    startImmersAuth: PropTypes.func,
     isMonetized: PropTypes.bool,
     sessionId: PropTypes.string,
     subscriptions: PropTypes.object,
@@ -170,6 +173,12 @@ class UIRoot extends Component {
     activeObject: PropTypes.object,
     selectedObject: PropTypes.object,
     breakpoint: PropTypes.string
+  };
+
+  static defaultProps = {
+    friends: [],
+    immersScopes: [],
+    isImmersConnected: false
   };
 
   state = {
@@ -801,6 +810,8 @@ class UIRoot extends Component {
           appName={configs.translation("app-name")}
           logoSrc={configs.image("logo")}
           roomName={this.props.hub.name}
+          showLoginToImmers={!this.props.isImmersConnected}
+          onLoginToImmers={this.props.startImmersAuth}
           showJoinRoom={!this.state.waitingOnAudio && canEnter}
           onJoinRoom={() => {
             if (promptForNameAndAvatarBeforeEntry || !this.props.forcedVREntryType) {
@@ -1568,7 +1579,9 @@ class UIRoot extends Component {
                       </>
                     )}
                     <ChatToolbarButtonContainer onClick={() => this.toggleSidebar("chat")} />
-                    <ImmersFeedToolbarButtonContainer onClick={() => this.toggleSidebar("feed")} />
+                    {this.props.isImmersConnected && (
+                      <ImmersFeedToolbarButtonContainer onClick={() => this.toggleSidebar("feed")} />
+                    )}
                     {entered &&
                       isMobileVR && (
                         <ToolbarButton
@@ -1645,7 +1658,11 @@ function UIRootHooksWrapper(props) {
 
   return (
     <ChatContextProvider messageDispatch={props.messageDispatch}>
-      <ImmersFeedContextProvider messageDispatch={props.immersMessageDispatch}>
+      <ImmersFeedContextProvider
+        messageDispatch={props.immersMessageDispatch}
+        permissions={props.immersScopes}
+        reAuthorize={props.immersReAuth}
+      >
         <ObjectListProvider scene={props.scene}>
           <UIRoot breakpoint={breakpoint} {...props} />
         </ObjectListProvider>
@@ -1658,7 +1675,9 @@ UIRootHooksWrapper.propTypes = {
   scene: PropTypes.object.isRequired,
   messageDispatch: PropTypes.object,
   store: PropTypes.object.isRequired,
-  immersMessageDispatch: PropTypes.object
+  immersMessageDispatch: PropTypes.object,
+  immersScopes: PropTypes.array,
+  immersReAuth: PropTypes.func
 };
 
 export default UIRootHooksWrapper;

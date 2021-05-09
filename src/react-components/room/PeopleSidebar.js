@@ -14,7 +14,7 @@ import { ReactComponent as VolumeHighIcon } from "../icons/VolumeHigh.svg";
 import { ReactComponent as VolumeMutedIcon } from "../icons/VolumeMuted.svg";
 import { List, ButtonListItem } from "../layout/List";
 import { FormattedMessage, useIntl } from "react-intl";
-import { ImmerLink, ImmersAvatarIcon, ImmersFriendIcon } from "./ImmersReact";
+import { ImmerLink, ImmersAvatarIcon, ImmersFriendIcon, ImmersPermissionUpgrade } from "./ImmersReact";
 
 function getDeviceLabel(ctx, intl) {
   if (ctx) {
@@ -167,6 +167,11 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
             </ButtonListItem>
           );
         })}
+        <li>
+          <ImmersPermissionUpgrade scope="viewFriends" role="friends">
+            Need permission to load friends
+          </ImmersPermissionUpgrade>
+        </li>
       </List>
     </Sidebar>
   );
