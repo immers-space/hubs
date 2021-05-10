@@ -39,7 +39,8 @@ AFRAME.registerComponent("player-info", {
     avatarType: { type: "string", default: AVATAR_TYPES.SKINNABLE },
     muted: { default: false },
     immersId: { type: "string" },
-    monetized: { type: "boolean" }
+    monetized: { type: "boolean" },
+    isSharingAvatarCamera: { default: false }
   },
   init() {
     this.displayName = null;
@@ -190,6 +191,20 @@ AFRAME.registerComponent("player-info", {
       this.el.querySelectorAll("[hover-visuals]").forEach(el => {
         el.components["hover-visuals"].uniforms = uniforms;
       });
+    }
+
+    const videoTextureTargets = modelEl.querySelectorAll("[video-texture-target]");
+
+    const sessionId = this.isLocalPlayerInfo ? NAF.clientId : this.playerSessionId;
+
+    for (const el of Array.from(videoTextureTargets)) {
+      el.setAttribute("video-texture-target", {
+        src: this.data.isSharingAvatarCamera ? `hubs://clients/${sessionId}/video` : ""
+      });
+
+      if (this.isLocalPlayerInfo) {
+        el.setAttribute("emit-scene-event-on-remove", "event:action_end_video_sharing");
+      }
     }
   },
   handleModelError() {
