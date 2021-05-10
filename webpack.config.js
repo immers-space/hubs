@@ -633,6 +633,7 @@ module.exports = async (env, argv) => {
           GA_TRACKING_ID: process.env.GA_TRACKING_ID,
           POSTGREST_SERVER: process.env.POSTGREST_SERVER,
           IMMERS_SERVER: process.env.IMMERS_SERVER,
+          IMMERS_SCOPE: process.env.IMMERS_SCOPE,
           APP_CONFIG: appConfig
         })
       })

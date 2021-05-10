@@ -6,3 +6,4 @@ import "./monetization-invisible";
 import "./monetization-required";
 import "./monetization-interactable";
 import "./monetization-networked";
+import "./immers-visible-if-permitted";
