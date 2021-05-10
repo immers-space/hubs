@@ -28,7 +28,7 @@
     "logout": "node -r @babel/register -r esm -r ./scripts/shim scripts/logout.js",
     "deploy": "node -r @babel/register -r esm -r ./scripts/shim scripts/deploy.js",
     "immers-configure": "node -r @babel/register -r esm -r ./scripts/shim scripts/immers-configure.js",
-    "immers-build:image": "docker build -t immersspace/hubs .",
+    "immers-build:image": "docker build -t immersspace/hubs:latest.vreign .",
     "immers-publish:image": "docker push immersspace/hubs:latest.vreign",
     "undeploy": "node -r @babel/register -r esm -r ./scripts/shim scripts/undeploy.js",
     "test": "npm run lint && npm run test:unit && npm run build",
