@@ -66,6 +66,8 @@ AFRAME.registerSystem("chess-arbiter", {
     this.destroyMyPieces();
     this.sceneEl.emit("resetChessState");
     this.startGame(fen);
+    // reset scale & position after game
+    this.sceneEl.systems["hubs-systems"].waypointSystem.moveToSpawnPoint();
   },
 
   resetNetworkedGame(fen = "") {
@@ -344,7 +346,7 @@ AFRAME.registerSystem("chess-arbiter", {
   },
 
   teleportBlack() {
-    const waypoint = this.el.sceneEl.systems["hubs-systems"].waypointSystem.ready.filter(w => w.el.className === "st-chess-waypoint-white")[0];
+    const waypoint = this.el.sceneEl.systems["hubs-systems"].waypointSystem.ready.filter(w => w.el.className === "st-chess-waypoint-black")[0];
     if (waypoint) {
       this.el.sceneEl.systems["hubs-systems"].waypointSystem.moveToWaypoint(waypoint, true);
     } else {
@@ -369,18 +371,6 @@ AFRAME.registerSystem("chess-arbiter", {
       target: this.chessGame,
       offset: { x, y, z }
     });
-  },
-
-  superSizeMe() {
-    const avatarRig = document.querySelector("#avatar-rig");
-    avatarRig.object3D.scale.set(5, 5, 5);
-    avatarRig.object3D.matrixNeedsUpdate = true;
-  },
-
-  normalSizeMe() {
-    const avatarRig = document.querySelector("#avatar-rig");
-    avatarRig.object3D.scale.set(1, 1, 1);
-    avatarRig.object3D.matrixNeedsUpdate = true;
   },
 
   populateMoves(piece) {
