@@ -35,19 +35,14 @@ const getPlayerCamera = (() => {
   };
 })();
 
-function shouldMoveCursor(touch, raycaster) {
+function shouldMoveCursor(cursorPose, raycaster) {
   const isCursorGrabbing = !!AFRAME.scenes[0].systems.interaction.state.rightRemote.held;
   if (isCursorGrabbing) {
     return true;
   }
   const rawIntersections = [];
-  raycaster.setFromCamera(
-    {
-      x: (touch.clientX / window.innerWidth) * 2 - 1,
-      y: -(touch.clientY / window.innerHeight) * 2 + 1
-    },
-    getPlayerCamera()
-  );
+  raycaster.ray.origin = cursorPose.position;
+  raycaster.ray.direction = cursorPose.direction;
   raycaster.intersectObjects(
     AFRAME.scenes[0].systems["hubs-systems"].cursorTargettingSystem.targets,
     true,
@@ -212,9 +207,14 @@ export class AppAwareTouchscreenDevice {
 
     if (isFirstTouch || (isThirdTouch && hasSecondPinch)) {
       let assignment;
+      const cursorPose = new Pose().fromCameraProjection(
+        getPlayerCamera(),
+        (touch.clientX / this.canvas.clientWidth) * 2 - 1,
+        -(touch.clientY / this.canvas.clientHeight) * 2 + 1
+      );
 
       // First touch or third touch and other two fingers were pinching
-      if (shouldMoveCursor(touch, this.raycaster)) {
+      if (shouldMoveCursor(cursorPose, this.raycaster)) {
         assignment = assign(touch, MOVE_CURSOR_JOB, this.assignments);
 
         // Grabbing objects is delayed by several frames:
@@ -231,11 +231,7 @@ export class AppAwareTouchscreenDevice {
 
       // On touch down, we always move the cursor on the first frame, but the MOVE_CURSOR_JOB indicates
       // the touch will then track the cursor (instead of the camera)
-      assignment.cursorPose = new Pose().fromCameraProjection(
-        getPlayerCamera(),
-        (touch.clientX / this.canvas.clientWidth) * 2 - 1,
-        -(touch.clientY / this.canvas.clientHeight) * 2 + 1
-      );
+      assignment.cursorPose = cursorPose;
     } else if (isSecondTouch || isThirdTouch) {
       const cursorJob = findByJob(MOVE_CURSOR_JOB, this.assignments);
 
