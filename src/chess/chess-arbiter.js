@@ -316,38 +316,71 @@ AFRAME.registerSystem("chess-arbiter", {
   },
 
   teleportPlayer(color) {
-    const squareSize = this.chessGame.getAttribute("chess-game").squareSize;
     this.sceneEl.systems["hubs-systems"].characterController.enableFly(true);
     if (color === COLOR.WHITE) {
-      const destinationX = PositioningUtils.getPositionFromFile("e") - squareSize / 2;
-      const destinationY = squareSize * 4;
-      const destinationZ = PositioningUtils.getPositionFromRank("4") + squareSize * 5;
-      this.sceneEl.querySelector("#avatar-rig").removeAttribute("offset-relative-to");
-      this.sceneEl.querySelector("#avatar-rig").setAttribute("offset-relative-to", {
-        target: this.chessGame,
-        offset: { x: destinationX, y: destinationY, z: destinationZ }
-      });
-      // TODO: Replace with teleport waypoint
-      const q = new THREE.Quaternion(-0.3046977306369239, 0.06475573883689406, 0.02076899796372855, 0.9500182292756172);
-      this.sceneEl.querySelector("#avatar-pov-node").object3D.setRotationFromQuaternion(q);
+      this.teleportWhite();
     } else if (color === COLOR.BLACK) {
-      const destinationX = PositioningUtils.getPositionFromFile("e") - squareSize / 2;
-      const destinationY = squareSize * 4;
-      const destinationZ = PositioningUtils.getPositionFromRank("8") - squareSize * 4;
-      this.sceneEl.querySelector("#avatar-rig").removeAttribute("offset-relative-to");
-      this.sceneEl.querySelector("#avatar-rig").setAttribute("offset-relative-to", {
-        target: this.chessGame,
-        offset: { x: destinationX, y: destinationY, z: destinationZ }
-      });
-      // TODO: Replace with teleport waypoint
-      const q = new THREE.Quaternion(
-        -0.007975245041697407,
-        0.9725746384887974,
-        0.229994800204803,
-        0.033724767066099344
-      );
-      this.sceneEl.querySelector("#avatar-pov-node").object3D.setRotationFromQuaternion(q);
+      this.teleportBlack();
     }
+  },
+
+  teleportWhite() {
+    const waypoint = this.el.sceneEl.systems["hubs-systems"].waypointSystem.ready.filter(w => w.el.className === "st-chess-waypoint-white")[0];
+    if (waypoint) {
+      this.el.sceneEl.systems["hubs-systems"].waypointSystem.moveToWaypoint(waypoint, true);
+    } else {
+      this.teleportWhiteDefault();
+    }
+  },
+
+  teleportWhiteDefault() {
+    const squareSize = this.chessGame.getAttribute("chess-game").squareSize;
+    const destinationX = PositioningUtils.getPositionFromFile("e") - squareSize / 2;
+    const destinationY = squareSize * 4;
+    const destinationZ = PositioningUtils.getPositionFromRank("4") + squareSize * 5;
+    this.doTeleport(destinationX, destinationY, destinationZ);
+    const q = new THREE.Quaternion(-0.3046977306369239, 0.06475573883689406, 0.02076899796372855, 0.9500182292756172);
+    this.sceneEl.querySelector("#avatar-pov-node").object3D.setRotationFromQuaternion(q);
+  },
+
+  teleportBlack() {
+    const waypoint = this.el.sceneEl.systems["hubs-systems"].waypointSystem.ready.filter(w => w.el.className === "st-chess-waypoint-white")[0];
+    if (waypoint) {
+      this.el.sceneEl.systems["hubs-systems"].waypointSystem.moveToWaypoint(waypoint, true);
+    } else {
+      this.teleportBlackDefault();
+    }
+  },
+
+  teleportBlackDefault() {
+    const squareSize = this.chessGame.getAttribute("chess-game").squareSize;
+    const destinationX = PositioningUtils.getPositionFromFile("e") - squareSize / 2;
+    const destinationY = squareSize * 4;
+    const destinationZ = PositioningUtils.getPositionFromRank("8") - squareSize * 4;
+    this.doTeleport(destinationX, destinationY, destinationZ);
+    const q = new THREE.Quaternion(-0.007975245041697407, 0.9725746384887974, 0.229994800204803, 0.033724767066099344);
+    this.sceneEl.querySelector("#avatar-pov-node").object3D.setRotationFromQuaternion(q);
+  },
+
+  doTeleport(x, y, z) {
+    const avatarRig = document.querySelector("#avatar-rig");
+    avatarRig.removeAttribute("offset-relative-to");
+    avatarRig.setAttribute("offset-relative-to", {
+      target: this.chessGame,
+      offset: { x, y, z }
+    });
+  },
+
+  superSizeMe() {
+    const avatarRig = document.querySelector("#avatar-rig");
+    avatarRig.object3D.scale.set(5, 5, 5);
+    avatarRig.object3D.matrixNeedsUpdate = true;
+  },
+
+  normalSizeMe() {
+    const avatarRig = document.querySelector("#avatar-rig");
+    avatarRig.object3D.scale.set(1, 1, 1);
+    avatarRig.object3D.matrixNeedsUpdate = true;
   },
 
   populateMoves(piece) {
