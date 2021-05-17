@@ -8,6 +8,7 @@ AFRAME.registerSystem("chess-arbiter", {
     this.playAsEvent = this.playAsEvent.bind(this);
     this.copyPGN = this.copyPGN.bind(this);
     this.copyFEN = this.copyFEN.bind(this);
+    this.resetNetworkedGame = this.resetNetworkedGame.bind(this);
     this.tick = AFRAME.utils.throttleTick(this.tick, 300, this);
     this.state = this.sceneEl.systems.state.state;
     this.chessGame = this.sceneEl.querySelector("a-entity[chess-game]");
@@ -42,12 +43,14 @@ AFRAME.registerSystem("chess-arbiter", {
     this.el.sceneEl.addEventListener("chess:playAs", this.playAsEvent);
     this.el.sceneEl.addEventListener("chess:copyPGN", this.copyPGN);
     this.el.sceneEl.addEventListener("chess:copyFEN", this.copyFEN);
+    this.el.sceneEl.addEventListener("chess:resetNetworkedGame", this.resetNetworkedGame);
   },
 
   removeEventListeners() {
     this.el.sceneEl.removeEventListener("chess:playAs", this.playAsEvent);
     this.el.sceneEl.removeEventListener("chess:copyPGN", this.copyPGN);
     this.el.sceneEl.removeEventListener("chess:copyFEN", this.copyFEN);
+    this.el.sceneEl.removeEventListener("chess:resetNetworkedGame", this.resetNetworkedGame);
   },
 
   playAsEvent(ev) {
@@ -62,6 +65,10 @@ AFRAME.registerSystem("chess-arbiter", {
   },
 
   resetGame(fen = "") {
+    // if an event object is sent in from an eventListener, clear it out
+    if (typeof fen !== "string") {
+      fen = "";
+    }
     document.body.removeEventListener("clientConnected", this.announceCurrentPlayer);
     this.destroyMyPieces();
     this.sceneEl.emit("resetChessState");
