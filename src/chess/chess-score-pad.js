@@ -1,7 +1,11 @@
+import vaporWaveWindow from "../assets/images/vapor-wave-window.png";
+const vaporWaveWindowSrc = new URL(vaporWaveWindow, window.location.href).href;
+
 AFRAME.registerComponent("chess-score-pad", {
   schema: {
     textColor: { default: "#fff" },
-    backgroundColor: { default: "#282828" }
+    backgroundColor: { default: "#282828" },
+    backgroundImage: { default: "#282828" },
   },
 
   init() {
@@ -17,20 +21,24 @@ AFRAME.registerComponent("chess-score-pad", {
     this.whiteNotation.setAttribute("text", baseConfigText);
     this.whiteNotation.setAttribute("material", baseConfigMaterial);
     this.whiteNotation.setAttribute("geometry", baseConfigGeometry);
-    this.whiteNotation.setAttribute("position", "-0.3 0.8 0.001");
+    this.whiteNotation.setAttribute("position", "-0.45 0.8 0.001");
     this.el.appendChild(this.whiteNotation);
+    const bgImg = document.createElement("img");
+    bgImg.setAttribute("id", "vwWin");
+    bgImg.setAttribute("src", vaporWaveWindowSrc);
+    document.querySelector("a-assets").appendChild(bgImg);
     this.whiteNotationBg = document.createElement("a-entity");
-    this.whiteNotationBg.setAttribute("material", baseConfigMaterialBg);
+    this.whiteNotationBg.setAttribute("material", "src: #vwWin; side:double;");
     this.whiteNotationBg.setAttribute("geometry", baseConfigGeometry);
     this.el.appendChild(this.whiteNotationBg);
     this.blackNotation = document.createElement("a-entity");
     this.blackNotation.setAttribute("text", baseConfigText);
     this.blackNotation.setAttribute("material", baseConfigMaterial);
     this.blackNotation.setAttribute("geometry", baseConfigGeometry);
-    this.blackNotation.setAttribute("position", "0.7 0.8 0.001");
+    this.blackNotation.setAttribute("position", "0.55 0.8 0.001");
     this.el.appendChild(this.blackNotation);
     this.blackNotationBg = document.createElement("a-entity");
-    this.blackNotationBg.setAttribute("material", baseConfigMaterialBg);
+    this.blackNotationBg.setAttribute("material", "src: #vwWin; side:double;");
     this.blackNotationBg.setAttribute("geometry", baseConfigGeometry);
     this.blackNotationBg.setAttribute("position", "1 0 0");
     this.el.appendChild(this.blackNotationBg);
