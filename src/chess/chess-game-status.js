@@ -2,7 +2,7 @@ import { COLOR } from './game-constants';
 
 AFRAME.registerComponent("chess-game-status", {
   schema: {
-    backgroundColor: { default: "#282828" },
+    backgroundColor: { default: "#9849E3" },
     textColor: { default: "#fff" },
   },
   init() {
@@ -14,12 +14,12 @@ AFRAME.registerComponent("chess-game-status", {
     const baseConfigText = `color:${this.data.textColor}; width:2.5; align:left; anchor:left; baseline:top; side:double;`;
     const baseConfigMaterial = "transparent: true; opacity: 0;";
     const baseConfigMaterialBg = `side:double; color:${this.data.backgroundColor};`;
-    const baseConfigGeometry = "primitive:plane; width:2; height:0.5;";
+    const baseConfigGeometry = "primitive:plane; width:3; height:0.5;";
     this.statusBoard = document.createElement("a-entity");
     this.statusBoard.setAttribute("geometry", baseConfigGeometry);
     this.statusBoard.setAttribute("material", baseConfigMaterial);
     this.statusBoard.setAttribute("text", baseConfigText);
-    this.statusBoard.setAttribute("position", "-0.4 0.1 0");
+    this.statusBoard.setAttribute("position", "-0.9 0.1 0.01");
     this.el.appendChild(this.statusBoard);
     this.statusBoardBg = document.createElement("a-entity");
     this.statusBoardBg.setAttribute("material", baseConfigMaterialBg);
