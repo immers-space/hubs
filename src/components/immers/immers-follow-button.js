@@ -58,7 +58,7 @@ AFRAME.registerComponent("immers-follow-button", {
         newText = "Accept friend";
         break;
       case "pending":
-        newText = "Reqest sent";
+        newText = "Request sent";
         break;
       case "friend":
         newText = "Unfriend";
