@@ -10,7 +10,7 @@ const replaceArrays = { arrayMerge: (destinationArray, sourceArray) => sourceArr
 const localImmer = configs.IMMERS_SERVER;
 // immer can set a requested scope, but user can override
 const preferredScope = configs.IMMERS_SCOPE;
-console.log("immers.space client v1.1.0");
+console.log("immers.space client v1.2.0");
 const jsonldMime = "application/activity+json";
 
 const activities = new Activities(localImmer);
