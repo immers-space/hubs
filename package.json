@@ -1,6 +1,6 @@
 {
   "name": "hubs",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Duck-themed multi-user virtual spaces in WebVR.",
   "main": "src/index.js",
   "license": "MPL-2.0",
@@ -114,6 +114,7 @@
     "jwt-decode": "^2.2.0",
     "lib-hubs": "github:mozillareality/lib-hubs#master",
     "linkify-it": "^2.0.3",
+    "linkifyjs": "^3.0.0-beta.3",
     "markdown-it": "^8.4.2",
     "moving-average": "^1.0.0",
     "naf-janus-adapter": "^4.0.1",
