@@ -151,8 +151,8 @@ export function ImmersMoreHistoryButton() {
 }
 
 export function ImmersPermissionUpgrade({ scope, role, children }) {
-  const { permissions } = useContext(ImmersFeedContext);
-  if (permissions.includes(scope)) {
+  const { permissions, reAuthorize } = useContext(ImmersFeedContext);
+  if (permissions.includes(scope) || !reAuthorize) {
     return null;
   }
   return (
@@ -173,6 +173,10 @@ ImmersPermissionUpgrade.propTypes = {
 
 export function ImmersPermissionUpgradeButton({ role }) {
   const { reAuthorize } = useContext(ImmersFeedContext);
+  if (!reAuthorize) {
+    // initial auth has not occurred
+    return null;
+  }
   return (
     <a href="#" className={styles.permissionsButton} onClick={() => reAuthorize(role)}>
       Reload &amp; change

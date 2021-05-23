@@ -1140,7 +1140,7 @@ class UIRoot extends Component {
                 reason: LeaveReason.createRoom
               })
           },
-          {
+          this.props.isImmersConnected && {
             id: "user-profile",
             label: <FormattedMessage id="more-menu.profile" defaultMessage="Change Name & Avatar" />,
             icon: AvatarIcon,
