@@ -1126,7 +1126,7 @@ class UIRoot extends Component {
               }
             : {
                 id: "sign-in",
-                label: <FormattedMessage id="more-menu.sign-in" defaultMessage="Sign In" />,
+                label: <FormattedMessage id="more-menu.sign-in" defaultMessage="Admin Sign In" />,
                 icon: EnterIcon,
                 onClick: () => this.showContextualSignInDialog()
               },
@@ -1146,7 +1146,7 @@ class UIRoot extends Component {
             icon: AvatarIcon,
             onClick: () => this.setSidebar("profile")
           },
-          {
+          this.state.signedIn  && {
             id: "favorite-rooms",
             label: <FormattedMessage id="more-menu.favorite-rooms" defaultMessage="Favorite Rooms" />,
             icon: FavoritesIcon,
@@ -1185,14 +1185,14 @@ class UIRoot extends Component {
               icon: InviteIcon,
               onClick: () => this.props.scene.emit("action_invite")
             },
-          this.isFavorited()
+          this.state.signedIn && this.isFavorited()
             ? {
                 id: "unfavorite-room",
                 label: <FormattedMessage id="more-menu.unfavorite-room" defaultMessage="Unfavorite Room" />,
                 icon: StarIcon,
                 onClick: () => this.toggleFavorited()
               }
-            : {
+            : this.state.signedIn && {
                 id: "favorite-room",
                 label: <FormattedMessage id="more-menu.favorite-room" defaultMessage="Favorite Room" />,
                 icon: StarOutlineIcon,

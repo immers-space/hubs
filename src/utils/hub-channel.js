@@ -51,7 +51,8 @@ export default class HubChannel extends EventTarget {
   // Returns true if the current session has the given permission, *or* will get the permission
   // if they sign in and become the creator.
   canOrWillIfCreator(permission) {
-    if (this._getCreatorAssignmentToken() && HUB_CREATOR_PERMISSIONS.includes(permission)) return true;
+    // immers: just show current perms; avoid showing options that aren't available
+    // if (this._getCreatorAssignmentToken() && HUB_CREATOR_PERMISSIONS.includes(permission)) return true;
     return this.can(permission);
   }
 
@@ -105,6 +106,7 @@ export default class HubChannel extends EventTarget {
   setPermissionsFromToken = token => {
     // Note: token is not verified.
     this._permissions = jwtDecode(token);
+    this._permissions.pin_objects = this._permissions.pin_objects && this._signedIn;
     configs.setIsAdmin(this._permissions.postgrest_role === "ret_admin");
     this.dispatchEvent(new CustomEvent("permissions_updated"));
 
@@ -272,8 +274,8 @@ export default class HubChannel extends EventTarget {
       this.channel
         .push("sign_in", { token, creator_assignment_token })
         .receive("ok", ({ perms_token }) => {
-          this.setPermissionsFromToken(perms_token);
           this._signedIn = true;
+          this.setPermissionsFromToken(perms_token);
           resolve();
         })
         .receive("error", err => {
