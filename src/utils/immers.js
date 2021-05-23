@@ -251,22 +251,7 @@ export async function auth(store, scope) {
       };
     }
   }
-  // send to token endpoint at local immer, it handles
-  // detecting remote users and sending them on to their home to login
-  const redirect = new URL(`${localImmer}/auth/authorize`);
-  const redirectParams = new URLSearchParams({
-    client_id: place.id,
-    // redirect to homepage to catch token
-    redirect_uri: hubUri.origin,
-    response_type: "token",
-    scope: scope || preferredScope
-  });
-  // users handle may be passed from previous immer or cached but with expired token
-  if (handle || store.state.profile.handle) {
-    // pass to auth to prefill login form
-    redirectParams.set("me", handle || store.state.profile.handle);
-  }
-  redirect.search = redirectParams.toString();
+
   // center the popup
   const width = 730;
   const height = 785;
@@ -293,7 +278,26 @@ export async function auth(store, scope) {
       };
       window.addEventListener("message", handler);
     }),
-    startImmersAuth: () => {
+    startImmersAuth: evt => {
+      // send to token endpoint at local immer, it handles
+      // detecting remote users and sending them on to their home to login
+      const redirect = new URL(`${localImmer}/auth/authorize`);
+      const redirectParams = new URLSearchParams({
+        client_id: place.id,
+        // redirect to homepage to catch token
+        redirect_uri: hubUri.origin,
+        response_type: "token",
+        scope: scope || preferredScope
+      });
+      // users handle may be passed from previous immer or cached but with expired token
+      if (handle || store.state.profile.handle) {
+        // pass to auth to prefill login form
+        redirectParams.set("me", handle || store.state.profile.handle);
+      }
+      if (evt.currentTarget.classList.contains("registration")) {
+        redirectParams.set("tab", "Register");
+      }
+      redirect.search = redirectParams.toString();
       popup = window.open(redirect, "immersLoginPopup", features);
     }
   };
