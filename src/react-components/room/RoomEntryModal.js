@@ -66,7 +66,7 @@ export function RoomEntryModal({
                   <FormattedMessage id="room-entry-modal.immers-register-button" defaultMessage="Sign up" />
                 </span>
               </Button>
-              <p>Login or create a free account to join the room</p>
+              <p>Login or create a free account to join this space</p>
             </>
           )}
           {showJoinRoom && (
