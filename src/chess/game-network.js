@@ -74,6 +74,7 @@ function setupNetwork(scene) {
     // Chess Engine Broadcasts
     window.NAF.connection.subscribeToDataChannel("chess::sync-move", (_, dataType, data) => {
       scene.systems["chess-arbiter"].chessEngine.move(data);
+      scene.emit("sync-move");
     });
     window.NAF.connection.subscribeToDataChannel("chess::capture-piece", (_, dataType, data) => {
       if (state.imPlaying) {

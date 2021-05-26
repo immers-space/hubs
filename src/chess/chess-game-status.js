@@ -8,9 +8,7 @@ AFRAME.registerComponent("chess-game-status", {
   init() {
     this.tick = AFRAME.utils.throttleTick(this.tick, 2000, this);
     this.state = this.el.sceneEl.systems.state.state;
-    window.NAF.connection.subscribeToDataChannel("chess::sync-move", () => {
-      this.updateGameStatus();
-    });
+    this.el.sceneEl.addEventListener('sync-move', this.updateGameStatus);
     const baseConfigText = `color:${this.data.textColor}; width:2.5; align:left; anchor:left; baseline:top; side:double;`;
     const baseConfigMaterial = "transparent: true; opacity: 0;";
     const baseConfigMaterialBg = `side:double; color:${this.data.backgroundColor};`;

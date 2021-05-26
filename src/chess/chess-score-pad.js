@@ -10,9 +10,7 @@ AFRAME.registerComponent("chess-score-pad", {
 
   init() {
     this.tick = AFRAME.utils.throttleTick(this.tick, 1000, this);
-    window.NAF.connection.subscribeToDataChannel("chess::sync-move", () => {
-      this.updateScorePad();
-    });
+    this.el.sceneEl.addEventListener('sync-move', this.updateScorePad);
     const baseConfigText = `color:${this.data.textColor}; width:2.5; align:left; anchor:left; baseline:top; side:double;`;
     const baseConfigMaterial = "transparent: true; opacity: 0;";
     const baseConfigMaterialBg = `side:double; color:${this.data.backgroundColor};`;
