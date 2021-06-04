@@ -1,6 +1,6 @@
 {
   "name": "hubs",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Duck-themed multi-user virtual spaces in WebVR.",
   "main": "src/index.js",
   "license": "MPL-2.0",
