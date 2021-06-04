@@ -122,7 +122,7 @@ export async function createAvatar(actorObj, hubsAvatarId) {
   const hubsAvatar = await fetchAvatar(hubsAvatarId);
   const immersAvatar = {
     type: "Model",
-    name: hubsAvatar.name,
+    name: hubsAvatar.name ?? "Imported avatar",
     url: {
       type: "Link",
       href: hubsAvatar.gltf_url,
@@ -131,13 +131,12 @@ export async function createAvatar(actorObj, hubsAvatarId) {
     to: actorObj.followers,
     generator: place
   };
-  if (hubsAvatar.files.thumbnail) {
-    immersAvatar.icon = {
-      type: "Image",
-      mediaType: "image/png",
-      url: hubsAvatar.files.thumbnail
-    };
-  }
+  immersAvatar.icon = {
+    type: "Image",
+    mediaType: "image/png",
+    // direct URL avatars won't have a preview image, fill in default
+    url: hubsAvatar.files?.thumbnail || configs.image("logo")
+  };
   if (hubsAvatar.attributions) {
     immersAvatar.attributedTo = Object.values(hubsAvatar.attributions).map(name => ({
       name,
@@ -464,13 +463,15 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     if (profile.displayName !== actorObj.name) {
       update.name = profile.displayName;
     }
-    if (getAvatarFromActor(actorObj) !== profile.avatarId) {
+    if (getAvatarFromActor(actorObj) !== (await fetchAvatar(profile.avatarId)).gltf_url) {
       update.avatar = myAvatars[profile.avatarId] || (await createAvatar(actorObj, profile.avatarId)).object;
       update.icon = update.avatar.icon;
     }
     // only publish update if something changed
     if (Object.keys(update).length) {
       await updateProfile(actorObj, update).catch(err => console.error("Error updating profile:", err.message));
+      // update cached copy of profile
+      Object.assign(actorObj, update);
     }
   });
 
