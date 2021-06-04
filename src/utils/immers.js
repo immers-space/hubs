@@ -122,7 +122,7 @@ export async function createAvatar(actorObj, hubsAvatarId) {
   const hubsAvatar = await fetchAvatar(hubsAvatarId);
   const immersAvatar = {
     type: "Model",
-    name: hubsAvatar.name,
+    name: hubsAvatar.name ?? "Imported avatar",
     url: {
       type: "Link",
       href: hubsAvatar.gltf_url,
@@ -131,13 +131,12 @@ export async function createAvatar(actorObj, hubsAvatarId) {
     to: actorObj.followers,
     generator: place
   };
-  if (hubsAvatar.files.thumbnail) {
-    immersAvatar.icon = {
-      type: "Image",
-      mediaType: "image/png",
-      url: hubsAvatar.files.thumbnail
-    };
-  }
+  immersAvatar.icon = {
+    type: "Image",
+    mediaType: "image/png",
+    // direct URL avatars won't have a preview image, fill in default
+    url: hubsAvatar.files?.thumbnail || configs.image("logo")
+  };
   if (hubsAvatar.attributions) {
     immersAvatar.attributedTo = Object.values(hubsAvatar.attributions).map(name => ({
       name,
@@ -251,22 +250,7 @@ export async function auth(store, scope) {
       };
     }
   }
-  // send to token endpoint at local immer, it handles
-  // detecting remote users and sending them on to their home to login
-  const redirect = new URL(`${localImmer}/auth/authorize`);
-  const redirectParams = new URLSearchParams({
-    client_id: place.id,
-    // redirect to homepage to catch token
-    redirect_uri: hubUri.origin,
-    response_type: "token",
-    scope: scope || preferredScope
-  });
-  // users handle may be passed from previous immer or cached but with expired token
-  if (handle || store.state.profile.handle) {
-    // pass to auth to prefill login form
-    redirectParams.set("me", handle || store.state.profile.handle);
-  }
-  redirect.search = redirectParams.toString();
+
   // center the popup
   const width = 730;
   const height = 785;
@@ -293,8 +277,33 @@ export async function auth(store, scope) {
       };
       window.addEventListener("message", handler);
     }),
-    startImmersAuth: () => {
+    startImmersAuth: evt => {
+      // send to token endpoint at local immer, it handles
+      // detecting remote users and sending them on to their home to login
+      const redirect = new URL(`${localImmer}/auth/authorize`);
+      const redirectParams = new URLSearchParams({
+        client_id: place.id,
+        // redirect to homepage to catch token
+        redirect_uri: hubUri.origin,
+        response_type: "token",
+        scope: scope || preferredScope
+      });
+      // users handle may be passed from previous immer or cached but with expired token
+      if (handle || store.state.profile.handle) {
+        // pass to auth to prefill login form
+        redirectParams.set("me", handle || store.state.profile.handle);
+      }
+      if (evt.currentTarget.classList.contains("registration")) {
+        redirectParams.set("tab", "Register");
+      }
+      redirect.search = redirectParams.toString();
       popup = window.open(redirect, "immersLoginPopup", features);
+      if (!popup) {
+        alert("Could not open login window. Please check if popup was blocked and allow it");
+      } else {
+        hubScene?.addState("immers-authorizing");
+        popup.onunload = () => hubScene?.removeState("immers-authorizing");
+      }
     }
   };
 }
@@ -460,13 +469,15 @@ export async function initialize(store, scene, remountUI, messageDispatch, creat
     if (profile.displayName !== actorObj.name) {
       update.name = profile.displayName;
     }
-    if (getAvatarFromActor(actorObj) !== profile.avatarId) {
+    if (getAvatarFromActor(actorObj) !== (await fetchAvatar(profile.avatarId)).gltf_url) {
       update.avatar = myAvatars[profile.avatarId] || (await createAvatar(actorObj, profile.avatarId)).object;
       update.icon = update.avatar.icon;
     }
     // only publish update if something changed
     if (Object.keys(update).length) {
       await updateProfile(actorObj, update).catch(err => console.error("Error updating profile:", err.message));
+      // update cached copy of profile
+      Object.assign(actorObj, update);
     }
   });
 

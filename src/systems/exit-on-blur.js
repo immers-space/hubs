@@ -42,7 +42,7 @@ AFRAME.registerSystem("exit-on-blur", {
   },
 
   onBlur() {
-    if (this.el.isMobile) {
+    if (this.el.isMobile && !this.el.is("immers-authorizing")) {
       clearTimeout(this.exitTimeout);
       this.exitTimeout = setTimeout(this.onTimeout, 30 * 1000);
     }

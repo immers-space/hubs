@@ -326,6 +326,7 @@
                         <a-entity class="freeze-menu" visibility-while-frozen="withinDistance: 100; withPermission: spawn_and_move_media">
                             <a-entity
                                 mixin="rounded-text-action-button"
+                                visible-if-permitted="pin_objects"
                                 is-remote-hover-target
                                 tags="singleActionButton:true"
                                 pin-networked-object-button="tipSelector:.pin-button-tip; labelSelector:.pin-button-label;"

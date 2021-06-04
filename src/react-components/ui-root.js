@@ -801,8 +801,10 @@ class UIRoot extends Component {
   renderEntryStartPanel = () => {
     const { hasAcceptedProfile, hasChangedName } = this.props.store.state.activity;
     const promptForNameAndAvatarBeforeEntry = this.props.hubIsBound ? !hasAcceptedProfile : !hasChangedName;
+    const pageIsMonetized = !!document.querySelector("meta[name=monetization]");
+    const showLogin = !this.props.isImmersConnected;
     // monetized users can bypass room limit
-    const canEnter = !this.props.entryDisallowed || this.props.isMonetized;
+    const canEnter = this.props.isImmersConnected && (!this.props.entryDisallowed || this.props.isMonetized);
     // TODO: What does onEnteringCanceled do?
     return (
       <>
@@ -810,7 +812,7 @@ class UIRoot extends Component {
           appName={configs.translation("app-name")}
           logoSrc={configs.image("logo")}
           roomName={this.props.hub.name}
-          showLoginToImmers={!this.props.isImmersConnected}
+          showLoginToImmers={showLogin}
           onLoginToImmers={this.props.startImmersAuth}
           showJoinRoom={!this.state.waitingOnAudio && canEnter}
           onJoinRoom={() => {
@@ -830,7 +832,7 @@ class UIRoot extends Component {
           }}
           showEnterOnDevice={!this.state.waitingOnAudio && canEnter && !isMobileVR}
           onEnterOnDevice={() => this.attemptLink()}
-          showSpectate={!this.state.waitingOnAudio}
+          showSpectate={false}
           onSpectate={() => this.setState({ watching: true })}
           showOptions={this.props.hubChannel.canOrWillIfCreator("update_hub")}
           onOptions={() => {
@@ -840,8 +842,11 @@ class UIRoot extends Component {
               SignInMessages.roomSettings
             );
           }}
-          showMonetizationRequired={!this.props.isMonetized}
-          showMonetized={this.props.isMonetized}
+          showRoomFull={!this.state.waitingOnAudio && !showLogin && this.props.entryDisallowed}
+          showMonetizationRequired={
+            !this.state.waitingOnAudio && pageIsMonetized && !showLogin && !this.props.isMonetized && !canEnter
+          }
+          showMonetized={!this.state.waitingOnAudio && !showLogin && this.props.isMonetized}
         />
         {!this.state.waitingOnAudio && (
           <EntryStartPanel
@@ -1098,7 +1103,7 @@ class UIRoot extends Component {
 
     const renderEntryFlow = (!enteredOrWatching && this.props.hub) || this.isWaitingForAutoExit();
 
-    const canCreateRoom = !configs.feature("disable_room_creation") || configs.isAdmin;
+    const canCreateRoom = !configs.feature("disable_room_creation") || configs.isAdmin();
     const canCloseRoom = this.props.hubChannel && !!this.props.hubChannel.canOrWillIfCreator("close_hub");
     const isModerator = this.props.hubChannel && this.props.hubChannel.canOrWillIfCreator("kick_users") && !isMobileVR;
 
@@ -1121,7 +1126,7 @@ class UIRoot extends Component {
               }
             : {
                 id: "sign-in",
-                label: <FormattedMessage id="more-menu.sign-in" defaultMessage="Sign In" />,
+                label: <FormattedMessage id="more-menu.sign-in" defaultMessage="Admin Sign In" />,
                 icon: EnterIcon,
                 onClick: () => this.showContextualSignInDialog()
               },
@@ -1135,13 +1140,13 @@ class UIRoot extends Component {
                 reason: LeaveReason.createRoom
               })
           },
-          {
+          this.props.isImmersConnected && {
             id: "user-profile",
             label: <FormattedMessage id="more-menu.profile" defaultMessage="Change Name & Avatar" />,
             icon: AvatarIcon,
             onClick: () => this.setSidebar("profile")
           },
-          {
+          this.state.signedIn  && {
             id: "favorite-rooms",
             label: <FormattedMessage id="more-menu.favorite-rooms" defaultMessage="Favorite Rooms" />,
             icon: FavoritesIcon,
@@ -1180,14 +1185,14 @@ class UIRoot extends Component {
               icon: InviteIcon,
               onClick: () => this.props.scene.emit("action_invite")
             },
-          this.isFavorited()
+          this.state.signedIn && this.isFavorited()
             ? {
                 id: "unfavorite-room",
                 label: <FormattedMessage id="more-menu.unfavorite-room" defaultMessage="Unfavorite Room" />,
                 icon: StarIcon,
                 onClick: () => this.toggleFavorited()
               }
-            : {
+            : this.state.signedIn && {
                 id: "favorite-room",
                 label: <FormattedMessage id="more-menu.favorite-room" defaultMessage="Favorite Room" />,
                 icon: StarOutlineIcon,

@@ -30,6 +30,7 @@ export function RoomEntryModal({
   onSpectate,
   showOptions,
   onOptions,
+  showRoomFull,
   showMonetizationRequired,
   showMonetized,
   ...rest
@@ -52,14 +53,23 @@ export function RoomEntryModal({
         </div>
         <Column center className={styles.buttons}>
           {showLoginToImmers && (
-            <Button preset="basic" onClick={onLoginToImmers}>
-              <ImmersIcon button={true} />
-              <span>
-                <FormattedMessage id="room-entry-modal.login-to-immers-button" defaultMessage="Immers Login" />
-              </span>
-            </Button>
+            <>
+              <Button preset="basic" onClick={onLoginToImmers}>
+                <ImmersIcon button={true} />
+                <span>
+                  <FormattedMessage id="room-entry-modal.login-to-immers-button" defaultMessage="Immers Login" />
+                </span>
+              </Button>
+              <Button preset="primary" onClick={onLoginToImmers} className="registration">
+                {/* <ImmersIcon button={true} /> */}
+                <span>
+                  <FormattedMessage id="room-entry-modal.immers-register-button" defaultMessage="Sign up" />
+                </span>
+              </Button>
+              <p>Login or create a free account to join this space</p>
+            </>
           )}
-          {!showLoginToImmers && showJoinRoom && (
+          {showJoinRoom && (
             <Button preset="accent4" onClick={onJoinRoom}>
               <EnterIcon />
               <span>
@@ -67,7 +77,7 @@ export function RoomEntryModal({
               </span>
             </Button>
           )}
-          {!showLoginToImmers && showEnterOnDevice && (
+          {showEnterOnDevice && (
             <Button preset="accent5" onClick={onEnterOnDevice}>
               <VRIcon />
               <span>
@@ -84,21 +94,26 @@ export function RoomEntryModal({
             </Button>
           )}
           <div className={styles.webmon}>
-            {!showJoinRoom && <p>This space has no more free slots available.</p>}
-            <WMIcon />
             {showMonetized && (
-              <div>
-                Thanks for paying! You can join this space even if it is full. Search for this icon in the space to find
-                other premium features.
-              </div>
+              <>
+                <WMIcon />
+                <p>
+                  Thanks for paying! {showRoomFull && <span>You can join this space even though it is full.</span>}{" "}
+                  Search for this icon in the space to find other premium features.
+                </p>
+              </>
             )}
             {showMonetizationRequired && (
-              <div>
-                <a href="https://web.immers.space/monetization-required/" target="_blank" rel="noopener">
-                  Sign up for Web Monetization
-                </a>{" "}
-                to unlock premium features and join spaces even when they are full.
-              </div>
+              <>
+                <WMIcon />
+                <p>
+                  This space has no more free slots available.{" "}
+                  <a href="https://web.immers.space/monetization-required/" target="_blank" rel="noopener noreferrer">
+                    Sign up for Web Monetization
+                  </a>{" "}
+                  to join anyway.
+                </p>
+              </>
             )}
           </div>
 
