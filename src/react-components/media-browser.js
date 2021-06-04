@@ -503,14 +503,16 @@ class MediaBrowserContainer extends Component {
         entries.length > 0 ||
         !showEmptyStringOnNoResult ? (
           <>
-            {urlSource === "avatars" && (
-              <CreateTile
-                type="avatar"
-                onClick={this.onCreateAvatar}
-                label={<FormattedMessage id="media-browser.create-avatar" defaultMessage="Create Avatar" />}
-              />
-            )}
+            {this.props.hubChannel.signedIn &&
+              urlSource === "avatars" && (
+                <CreateTile
+                  type="avatar"
+                  onClick={this.onCreateAvatar}
+                  label={<FormattedMessage id="media-browser.create-avatar" defaultMessage="Create Avatar" />}
+                />
+              )}
             {urlSource === "scenes" &&
+              this.props.hubChannel.signedIn &&
               configs.feature("enable_spoke") && (
                 <CreateTile
                   as="a"
@@ -559,6 +561,10 @@ class MediaBrowserContainer extends Component {
                 onCopy = e => this.handleCopyAvatar(e, entry);
               } else if (isScene) {
                 onCopy = e => this.handleCopyScene(e, entry);
+              }
+
+              if (!this.props.hubChannel.signedIn) {
+                onCopy = null;
               }
 
               return (

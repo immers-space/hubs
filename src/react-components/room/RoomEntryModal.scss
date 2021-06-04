@@ -10,6 +10,10 @@
   @media(min-width: theme.$breakpoint-lg) and (min-height: theme.$breakpoint-vr) {
     padding: 24px;
   }
+  p {
+    font-size: theme.$font-size-sm;
+    max-width: 275px;
+  }
 }
 
 :local(.logo-container) {
@@ -53,7 +57,7 @@
 
 :local(.webmon) {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   svg {
     flex-shrink: 0;

@@ -233,6 +233,7 @@ export function MediaTile({ entry, processThumbnailUrl, onClick, onEdit, onShowS
           </TileAction>
         )}
         {entry.type === "avatar_listing" &&
+          onCopy &&
           entry.allow_remixing && (
             <TileAction
               title={intl.formatMessage({
@@ -245,6 +246,7 @@ export function MediaTile({ entry, processThumbnailUrl, onClick, onEdit, onShowS
             </TileAction>
           )}
         {entry.type === "scene_listing" &&
+          onCopy &&
           entry.allow_remixing && (
             <TileAction
               title={intl.formatMessage({
