@@ -298,6 +298,12 @@ export async function auth(store, scope) {
       }
       redirect.search = redirectParams.toString();
       popup = window.open(redirect, "immersLoginPopup", features);
+      if (!popup) {
+        alert("Could not open login window. Please check if popup was blocked and allow it");
+      } else {
+        hubScene?.addState("immers-authorizing");
+        popup.onunload = () => hubScene?.removeState("immers-authorizing");
+      }
     }
   };
 }
