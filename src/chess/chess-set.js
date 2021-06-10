@@ -55,7 +55,8 @@ AFRAME.registerComponent("chess-set", {
   },
 
   initPremium() {
-    this.el.isPremium = document.querySelectorAll('[chess-board]').length;
+    const isPremium = document.querySelectorAll('[vreign-premium-pieces]').length;
+    // const isPremium = document.querySelectorAll('[chess-board]').length; // for testing
     if (this.el.isPremium) {
       this.el.setAttribute('hacky-animations', '');
     }
