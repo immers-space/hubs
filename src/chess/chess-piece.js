@@ -2,6 +2,7 @@ import { addMedia } from "../utils/media-utils";
 import { getAbsoluteHref } from "../utils/media-url-utils";
 import * as PositioningUtils from "./positioning-utils";
 import * as GameNetwork from "./game-network";
+import * as HackyAnimationUtils from "./hacky-animation-utils";
 
 AFRAME.registerComponent("chess-piece", {
   schema: {
@@ -15,7 +16,8 @@ AFRAME.registerComponent("chess-piece", {
     moves: { default: [] },
     wasHeld: { default: false },
     pieceY: { default: 0 },
-    sendTo: { default: "" }
+    sendTo: { default: "" },
+    isPremium: { default: false }
   },
 
   init() {
@@ -85,12 +87,24 @@ AFRAME.registerComponent("chess-piece", {
     entity.fireResetRotation = () => {
       this.resetPieceRotation(entity);
     };
+    if (this.data.isPremium) {
+      setTimeout(() => {
+        HackyAnimationUtils.pausePiece(entity);
+      }, 3000);
+    }
   },
 
   resetPieceRotation(piece) {
     if (this.invertKnights === true && this.data.type === "n") {
       piece.setAttribute("rotation", "0 180 0");
     } else {
+      piece.setAttribute("rotation", "0 0 0");
+    }
+    // Temp hack to turn around animated pieces
+    if (this.data.isPremium && this.data.color === 'w' && this.data.type !== 'n') {
+      piece.setAttribute("rotation", "0 180 0");
+    }
+    if (this.data.isPremium && this.data.color === 'b' && this.data.type === 'n') {
       piece.setAttribute("rotation", "0 0 0");
     }
   },

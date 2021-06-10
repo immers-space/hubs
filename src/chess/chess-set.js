@@ -11,6 +11,18 @@ import bishopW from "../assets/models/chess/white_bishop.glb";
 import queenW from "../assets/models/chess/white_queen.glb";
 import kingW from "../assets/models/chess/white_king.glb";
 import pawnW from "../assets/models/chess/white_pawn.glb";
+import animRookB from "../assets/models/chess/black_rook_anim.glb";
+import animKnightB from "../assets/models/chess/black_knight_anim.glb";
+import animBishopB from "../assets/models/chess/black_bishop_anim.glb";
+import animQueenB from "../assets/models/chess/black_queen_anim.glb";
+import animKingB from "../assets/models/chess/black_king_anim.glb";
+import animPawnB from "../assets/models/chess/black_pawn_anim.glb";
+import animRookW from "../assets/models/chess/white_rook_anim.glb";
+import animKnightW from "../assets/models/chess/white_knight_anim.glb";
+import animBishopW from "../assets/models/chess/white_bishop_anim.glb";
+import animQueenW from "../assets/models/chess/white_queen_anim.glb";
+import animKingW from "../assets/models/chess/white_king_anim.glb";
+import animPawnW from "../assets/models/chess/white_pawn_anim.glb";
 
 AFRAME.registerComponent("chess-set", {
   schema: {
@@ -19,6 +31,7 @@ AFRAME.registerComponent("chess-set", {
 
   init() {
     this.detectGame();
+    this.initPremium();
     this.buildSet(this.data.color);
     this.el.queenB = queenB;
     this.el.queenW = queenW;
@@ -39,6 +52,13 @@ AFRAME.registerComponent("chess-set", {
     this.pieceY = this.squareSize * 2.4;
     this.scaleDefault = 2;
     this.invertKnights = this.chessGame.getAttribute("chess-game").invertKnights;
+  },
+
+  initPremium() {
+    this.el.isPremium = document.querySelectorAll('[chess-board]').length;
+    if (this.el.isPremium) {
+      this.el.setAttribute('hacky-animations', '');
+    }
   },
 
   buildSet(color = "") {
@@ -96,6 +116,7 @@ AFRAME.registerComponent("chess-set", {
     this.buildPieces(pieces);
     this.createCursor();
   },
+
   getEnginePieces(color) {
     let pieces = [];
     const c = (color === COLOR.WHITE) ? COLOR.W : COLOR.B;
@@ -115,6 +136,7 @@ AFRAME.registerComponent("chess-set", {
     }
     return pieces;
   },
+
   getInitialSquare(row, col) {
     let rank = null;
     let file = null;
@@ -172,42 +194,72 @@ AFRAME.registerComponent("chess-set", {
     }
     return `${file}${rank}`;
   },
+
   getModel(color, type) {
     let model = null;
+    const isPremium = document.querySelectorAll('[vreign-premium-pieces]').length;
+    // const isPremium = document.querySelectorAll('[chess-board]').length; // for testing
     switch (type) {
       case "r":
-        model = (color === COLOR.B) ? rookB : rookW;
+        if (isPremium) {
+          model = (color === COLOR.B) ? animRookB : animRookW;
+        } else {
+          model = (color === COLOR.B) ? rookB : rookW;
+        }
         break;
       case "n":
-        model = (color === COLOR.B) ? knightB : knightW;
+        if (isPremium) {
+          model = (color === COLOR.B) ? animKnightB : animKnightW;
+        } else {
+          model = (color === COLOR.B) ? knightB : knightW;
+        }
         break;
       case "b":
-        model = (color === COLOR.B) ? bishopB : bishopW;
+        if (isPremium) {
+          model = (color === COLOR.B) ? animBishopB : animBishopW;
+        } else {
+          model = (color === COLOR.B) ? bishopB : bishopW;
+        }
         break;
       case "q":
-        model = (color === COLOR.B) ? queenB : queenW;
+        if (isPremium) {
+          model = (color === COLOR.B) ? animQueenB : animQueenW;
+        } else {
+          model = (color === COLOR.B) ? queenB : queenW;
+        }
         break;
       case "k":
-        model = (color === COLOR.B) ? kingB : kingW;
+        if (isPremium) {
+          model = (color === COLOR.B) ? animKingB : animKingW;
+        } else {
+          model = (color === COLOR.B) ? kingB : kingW;
+        }
         break;
       case "p":
-        model = (color === COLOR.B) ? pawnB : pawnW;
+        if (isPremium) {
+          model = (color === COLOR.B) ? animPawnB : animPawnW;
+        } else {
+          model = (color === COLOR.B) ? pawnB : pawnW;
+        }
         break;
     }
     return model;
   },
+
   buildPieces(pieces) {
     pieces.forEach(piece => {
-      const pieceMeta = `type: ${piece.type}; color: ${piece.color}; initialSquare: ${piece.initialSquare}; model: ${piece.model};`;
+      const pieceMeta = `type: ${piece.type}; color: ${piece.color}; initialSquare: ${piece.initialSquare}; model: ${piece.model}; isPremium: ${this.el.isPremium}`;
       const tempPiece = document.createElement("a-entity");
       tempPiece.setAttribute("chess-piece", pieceMeta);
       this.el.appendChild(tempPiece);
     });
   },
+
   createCursor() {
     const cursor = document.createElement("a-entity");
     cursor.setAttribute("chess-cursor", "");
     cursor.setAttribute("radius", this.data.squareSize / 8);
     this.el.appendChild(cursor);
   }
+
 });
