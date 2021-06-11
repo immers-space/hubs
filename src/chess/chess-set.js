@@ -55,7 +55,7 @@ AFRAME.registerComponent("chess-set", {
   },
 
   initPremium() {
-    const isPremium = document.querySelectorAll('[vreign-premium-pieces]').length;
+    this.el.isPremium = document.querySelectorAll('[vreign-premium-pieces]').length;
     // const isPremium = document.querySelectorAll('[chess-board]').length; // for testing
     if (this.el.isPremium) {
       this.el.setAttribute('hacky-animations', '');
@@ -198,7 +198,7 @@ AFRAME.registerComponent("chess-set", {
 
   getModel(color, type) {
     let model = null;
-    const isPremium = document.querySelectorAll('[vreign-premium-pieces]').length;
+    const isPremium = this.el.isPremium;
     // const isPremium = document.querySelectorAll('[chess-board]').length; // for testing
     switch (type) {
       case "r":
