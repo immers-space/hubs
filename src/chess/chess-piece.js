@@ -36,12 +36,12 @@ AFRAME.registerComponent("chess-piece", {
       k: parseFloat(yCorrectionsArray[0]),
       q: parseFloat(yCorrectionsArray[1]),
       b: parseFloat(yCorrectionsArray[2]),
-      n: parseFloat(yCorrectionsArray[3]),
+      n: this.data.isPremium ? -4 : parseFloat(yCorrectionsArray[3]),
       r: parseFloat(yCorrectionsArray[4]),
       p: parseFloat(yCorrectionsArray[5])
     };
     this.pieceY = this.squareSize * 2.4;
-    this.scaleDefault = 2;
+    this.scaleDefault = this.data.isPremium ? 4 : 2;
     this.invertKnights = this.chessGame.getAttribute("chess-game").invertKnights;
   },
 
@@ -115,7 +115,7 @@ AFRAME.registerComponent("chess-piece", {
       bbox.setFromObject(entity.object3D);
       if (isFinite(bbox.min.y)) {
         const height = bbox.max.y/2 - bbox.min.y/2;
-        const autoY = height + this.squareSize * 1.5;
+        const autoY = height + this.squareSize * 1.5 + this.yCorrections[this.data.type];
         this.data.pieceY = autoY;
         entity.object3D.position.y = autoY;
       }
