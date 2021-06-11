@@ -2,16 +2,15 @@ const FPS = 30;
 
 function pausePiece(piece) {
     const aniMixer = piece.components['animation-mixer'];
-    if (aniMixer && aniMixer.mixer._actions[0]) {
-        piece.components["animation-mixer"].mixer.setTime(0);
+    if (aniMixer) {
         aniMixer.mixer._actions[0].paused = true;
     }
 }
 
-function doHeld(piece, type) {
+function doHeld(piece) {
     if (piece.components["animation-mixer"]) {
-        const startTime = getHeldStart(type || piece.metadata.type);
-        const elapsedTime = getHeldElapsed(type || piece.metadata.type);
+        const startTime = getHeldStart(piece.metadata.type);
+        const elapsedTime = getHeldElapsed(piece.metadata.type);
         piece.components["animation-mixer"].mixer._actions[0].paused = false;
         piece.components["animation-mixer"].mixer.setTime(startTime);
         setTimeout(() => {
@@ -54,10 +53,10 @@ function getHeldElapsed(type) {
     }
 }
 
-function doMoved(piece, type) {
+function doMoved(piece) {
     if (piece.components["animation-mixer"]) {
-        const startTime = getActionStart(type || piece.metadata.type);
-        const elapsedTime = getActionElapsed(type || piece.metadata.type);
+        const startTime = getActionStart(piece.metadata.type);
+        const elapsedTime = getActionElapsed(piece.metadata.type);
         piece.components["animation-mixer"].mixer._actions[0].paused = false;
         piece.components["animation-mixer"].mixer.setTime(startTime);
         setTimeout(() => {
@@ -102,10 +101,10 @@ function getActionElapsed(type) {
     }
 }
 
-function doIdle(piece, type) {
+function doIdle(piece) {
     if (piece.components["animation-mixer"]) {
-        const startTime = getIdleStart(type || piece.metadata.type);
-        const elapsedTime = getIdleElapsed(type || piece.metadata.type);
+        const startTime = getIdleStart(piece.metadata.type);
+        const elapsedTime = getIdleElapsed(piece.metadata.type);
         piece.components["animation-mixer"].mixer._actions[0].paused = false;
         piece.components["animation-mixer"].mixer.setTime(startTime);
         setTimeout(() => {
