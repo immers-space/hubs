@@ -25,7 +25,7 @@ AFRAME.registerComponent("hacky-animations", {
     onHeld(ev) {
         const piece = ev.detail.piece;
         if (piece.metadata.isPremium && !piece.metadata.wasHeld) {
-            GameNetwork.broadcastData("chess::sync-animation", { method: "doHeld", pieceId: piece.id });
+            GameNetwork.broadcastData("chess::sync-animation", { method: "doHeld", pieceId: piece.id, type: piece.metadata.type });
             HackyAnimationUtils.doHeld(piece);
         }
     },
@@ -33,7 +33,7 @@ AFRAME.registerComponent("hacky-animations", {
     onMoved(ev) {
         const piece = ev.detail.piece;
         if (piece.metadata.isPremium) {
-            GameNetwork.broadcastData("chess::sync-animation", { method: "doMoved", pieceId: piece.id });
+            GameNetwork.broadcastData("chess::sync-animation", { method: "doMoved", pieceId: piece.id, type: piece.metadata.type });
             HackyAnimationUtils.doMoved(piece);
         }
     },
@@ -52,7 +52,7 @@ AFRAME.registerComponent("hacky-animations", {
         }, randomSeconds);
         if (this.el.sceneEl.systems.state.state.imPlaying) {
             const piece = this.pickRandomPiece();
-            GameNetwork.broadcastData("chess::sync-animation", { method: "doIdle", pieceId: piece.id });
+            GameNetwork.broadcastData("chess::sync-animation", { method: "doIdle", pieceId: piece.id, type: piece.metadata.type });
             HackyAnimationUtils.doIdle(piece);
         }
     },

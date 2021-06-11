@@ -77,7 +77,7 @@ function setupNetwork(scene) {
     });
     window.NAF.connection.subscribeToDataChannel("chess::sync-animation", (_, dataType, data) => {
       const piece = document.querySelector(`#${data.pieceId}`);
-      HackyAnimationUtils[data.method](piece);
+      HackyAnimationUtils[data.method](piece, data.type);
     });
     // Chess Engine Broadcasts
     window.NAF.connection.subscribeToDataChannel("chess::sync-move", (_, dataType, data) => {
