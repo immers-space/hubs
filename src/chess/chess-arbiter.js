@@ -201,6 +201,7 @@ AFRAME.registerSystem("chess-arbiter", {
     if (PositioningUtils.isOnBoard(piece) === false || isSquareValid === false) {
       this.sceneEl.emit("chess-cursor", { enabled: true, valid: false, position });
     }
+    this.sceneEl.emit("chess-piece-held", { piece });
     piece.metadata.wasHeld = true;
   },
 
@@ -230,6 +231,7 @@ AFRAME.registerSystem("chess-arbiter", {
         if (move) {
           GameNetwork.broadcastData("chess::sync-move", moveDetails);
           this.doMove(move);
+          this.sceneEl.emit("chess-piece-moved", { piece });
         }
         if (!move || lastSquare === destinationSquare.square) {
           this.onPieceGoBack(piece);
@@ -404,6 +406,8 @@ AFRAME.registerSystem("chess-arbiter", {
 
   squareCaptured(square) {
     GameNetwork.sendData(this.state.opponentId, "chess::capture-piece", { square });
+    const piece = PositioningUtils.getPieceFromSquare(square);
+    this.sceneEl.emit("chess-piece-died", { piece });
   },
 
   destroyMyPieces() {

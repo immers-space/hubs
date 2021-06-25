@@ -2,6 +2,7 @@ import { addMedia } from "../utils/media-utils";
 import { getAbsoluteHref } from "../utils/media-url-utils";
 import * as PositioningUtils from "./positioning-utils";
 import * as GameNetwork from "./game-network";
+import * as HackyAnimationUtils from "./hacky-animation-utils";
 
 AFRAME.registerComponent("chess-piece", {
   schema: {
@@ -15,7 +16,8 @@ AFRAME.registerComponent("chess-piece", {
     moves: { default: [] },
     wasHeld: { default: false },
     pieceY: { default: 0 },
-    sendTo: { default: "" }
+    sendTo: { default: "" },
+    isPremium: { default: false }
   },
 
   init() {
@@ -34,12 +36,12 @@ AFRAME.registerComponent("chess-piece", {
       k: parseFloat(yCorrectionsArray[0]),
       q: parseFloat(yCorrectionsArray[1]),
       b: parseFloat(yCorrectionsArray[2]),
-      n: parseFloat(yCorrectionsArray[3]),
+      n: this.data.isPremium ? -4 : parseFloat(yCorrectionsArray[3]),
       r: parseFloat(yCorrectionsArray[4]),
       p: parseFloat(yCorrectionsArray[5])
     };
     this.pieceY = this.squareSize * 2.4;
-    this.scaleDefault = 2;
+    this.scaleDefault = this.data.isPremium ? 4 : 2;
     this.invertKnights = this.chessGame.getAttribute("chess-game").invertKnights;
   },
 
@@ -85,12 +87,24 @@ AFRAME.registerComponent("chess-piece", {
     entity.fireResetRotation = () => {
       this.resetPieceRotation(entity);
     };
+    if (this.data.isPremium) {
+      setTimeout(() => {
+        HackyAnimationUtils.pausePiece(entity);
+      }, 3000);
+    }
   },
 
   resetPieceRotation(piece) {
     if (this.invertKnights === true && this.data.type === "n") {
       piece.setAttribute("rotation", "0 180 0");
     } else {
+      piece.setAttribute("rotation", "0 0 0");
+    }
+    // Temp hack to turn around animated pieces
+    if (this.data.isPremium && this.data.color === 'w' && this.data.type !== 'n') {
+      piece.setAttribute("rotation", "0 180 0");
+    }
+    if (this.data.isPremium && this.data.color === 'b' && this.data.type === 'n') {
       piece.setAttribute("rotation", "0 0 0");
     }
   },
@@ -101,7 +115,7 @@ AFRAME.registerComponent("chess-piece", {
       bbox.setFromObject(entity.object3D);
       if (isFinite(bbox.min.y)) {
         const height = bbox.max.y/2 - bbox.min.y/2;
-        const autoY = height + this.squareSize * 1.5;
+        const autoY = height + this.squareSize * 1.5 + this.yCorrections[this.data.type];
         this.data.pieceY = autoY;
         entity.object3D.position.y = autoY;
       }

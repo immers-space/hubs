@@ -1,4 +1,5 @@
 import * as PositioningUtils from "./positioning-utils";
+import * as HackyAnimationUtils from "./hacky-animation-utils";
 
 function setPieceClaimed(pieceData) {
   // TODO: Retries may no longer be needed with new state system.
@@ -27,6 +28,9 @@ function setPieceClaimed(pieceData) {
       "type: kinematic; mass: 1000; collisionFilterGroup: 0; collisionFilterMask: 0; disableCollision: true; emitCollisionEvents: false; linearDamping: 1; angularDamping: 1;"
     );
     piece.classList.remove("interactable");
+    setTimeout(() => {
+      HackyAnimationUtils.pausePiece(piece);
+    }, 3000);
   } else if (pieceData.retryCount < 5) {
     setTimeout(() => {
       pieceData.retryCount += 1;
@@ -70,6 +74,11 @@ function setupNetwork(scene) {
     });
     window.NAF.connection.subscribeToDataChannel("chess::load-pgn", (_, dataType, data) => {
       scene.systems["chess-arbiter"].loadPGN(data.pgn);
+    });
+    window.NAF.connection.subscribeToDataChannel("chess::sync-animation", (_, dataType, data) => {
+      const piece = document.querySelector(`#${data.pieceId}`);
+      piece.metadata = data.metadata;
+      HackyAnimationUtils[data.method](piece);
     });
     // Chess Engine Broadcasts
     window.NAF.connection.subscribeToDataChannel("chess::sync-move", (_, dataType, data) => {

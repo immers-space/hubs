@@ -241,6 +241,7 @@ import "./chess/chess-game-status";
 import "./chess/chess-game-controls";
 import "./chess/chess-notation-controls";
 import "./chess/chess-board-position";
+import "./chess/hacky-animations";
 
 const PHOENIX_RELIABLE_NAF = "phx-reliable";
 NAF.options.firstSyncSource = PHOENIX_RELIABLE_NAF;
