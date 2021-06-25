@@ -74,6 +74,12 @@ export function setupMonetization(scene, player, remountUI) {
   if (hubScene.is("loaded")) {
     onSceneLoaded();
   } else {
-    hubScene.addEventListener("environment-scene-loaded", onSceneLoaded, { once: true });
+    const sceneStateListener = ({ detail }) => {
+      if (detail === "loaded") {
+        onSceneLoaded();
+        hubScene.removeEventListener("stateadded", sceneStateListener);
+      }
+    };
+    hubScene.addEventListener("stateadded", sceneStateListener);
   }
 }

@@ -20,10 +20,7 @@ const { host, token } = JSON.parse(readFileSync(".ret.credentials"));
   const cfg = {
     extra_csp: {
       // connect to home immer
-      connect_src: "https: wss:",
-      // allow Coil WebMon browser plugin
-      script_src:
-        "'sha256-W5yaJ6UM3/kOJa12aRVSLOEOKdAUYAWZPM1bUuaTJYQ='  'sha256-XpyxuqRQmj1o8ovYZlIA71UXSYTvYdV8kOb55p+lrNo=' 'sha256-tie542PGbiDGOm9MefVIzDBZf4Nt5wTagAHT/BKEB94=' 'sha256-9QLzkf1LE5s0CtnpqUvwkWr7DV4GRfQLGt/tFNT19h0='"
+      connect_src: "https: wss:"
     },
     security: {
       // fetch remote avatars
@@ -35,7 +32,7 @@ const { host, token } = JSON.parse(readFileSync(".ret.credentials"));
     },
     extra_html: {}
   };
-  // add local immers server env variable and web monetizatoin payment pointer to all pages
+  // add local immers server env variable and web monetization payment pointer to all pages
   const extraHeader = `<meta name="env:immers_server" content="https://${immer}"><meta name="monetization" content="${wallet}">`;
   ["extra_avatar_html", "extra_index_html", "extra_room_html", "extra_scene_html"].forEach(setting => {
     cfg.extra_html[setting] = extraHeader;
