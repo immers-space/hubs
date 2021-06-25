@@ -11,4 +11,6 @@ RUN npm ci
 WORKDIR /usr/src/hubs
 COPY . .
 
+RUN npm run deploy -- --skipCI --noUpload --envPlaceholders
+
 CMD [ "/bin/bash", "dockerdeploy.sh" ]
