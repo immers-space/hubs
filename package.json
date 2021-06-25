@@ -29,7 +29,7 @@
     "deploy": "node -r @babel/register -r esm -r ./scripts/shim scripts/deploy.js",
     "immers-configure": "node -r @babel/register -r esm -r ./scripts/shim scripts/immers-configure.js",
     "immers-build:image": "docker build -t immersspace/hubs .",
-    "immers-publish:image": "docker push immersspace/hubs:latest",
+    "immers-publish:image": "docker tag immersspace/hubs:latest immersspace/hubs:v$npm_package_version && docker push immersspace/hubs:latest && docker push immersspace/hubs:v$npm_package_version",
     "undeploy": "node -r @babel/register -r esm -r ./scripts/shim scripts/undeploy.js",
     "test": "npm run lint && npm run test:unit && npm run build",
     "test:unit": "ava",
